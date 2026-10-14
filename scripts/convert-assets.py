@@ -73,7 +73,8 @@ def texture(folder,name):
  preferred='.ozt' if Path(name).suffix.lower() in ['.tga','.ozt'] else '.ozj'
  for candidate in folder.iterdir():
   if candidate.stem.lower()==stem and candidate.suffix.lower()==preferred:p=candidate;break
- dest=OUT/'textures'/f'{folder.name.lower()}-{stem}.png'
+ variant='-alpha' if p.suffix.lower() in ['.ozt','.tga'] else ''
+ dest=OUT/'textures'/f'{folder.name.lower()}-{stem}{variant}.png'
  if not dest.exists():
   data=p.read_bytes()
   if p.suffix.lower()=='.ozj':

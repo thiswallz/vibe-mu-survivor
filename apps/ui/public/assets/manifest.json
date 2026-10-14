@@ -35,6 +35,42 @@
     "triangles": 680,
     "height": 1.92656
   },
+  "knight-armor": {
+    "source": [
+      "Player/HelmMale18.bmd",
+      "Player/ArmorMale18.bmd",
+      "Player/PantMale18.bmd",
+      "Player/GloveMale18.bmd",
+      "Player/BootMale18.bmd"
+    ],
+    "file": "assets/models/knight-armor.json",
+    "triangles": 1321,
+    "height": 2.0474200000000002
+  },
+  "wizard-armor": {
+    "source": [
+      "Player/HelmMale19.bmd",
+      "Player/ArmorMale19.bmd",
+      "Player/t_PantMale19.bmd",
+      "Player/GloveMale19.bmd",
+      "Player/BootMale19.bmd"
+    ],
+    "file": "assets/models/wizard-armor.json",
+    "triangles": 800,
+    "height": 1.97002
+  },
+  "elf-armor": {
+    "source": [
+      "Player/HelmElf05.bmd",
+      "Player/ArmorElf05.bmd",
+      "Player/PantElf05.bmd",
+      "Player/GloveElf05.bmd",
+      "Player/BootElf05.bmd"
+    ],
+    "file": "assets/models/elf-armor.json",
+    "triangles": 840,
+    "height": 1.98247
+  },
   "spider": {
     "source": [
       "Monster/Monster10.bmd"
@@ -170,6 +206,46 @@
     "file": "assets/models/grass.json",
     "triangles": 120,
     "height": 0.28923
+  },
+  "loot-kundun-box": {
+    "source": [
+      "Item/MagicBox01.bmd"
+    ],
+    "file": "assets/models/loot-kundun-box.json",
+    "triangles": 44,
+    "height": 0.26034
+  },
+  "loot-jewel-bless": {
+    "source": [
+      "Item/Jewel01.bmd"
+    ],
+    "file": "assets/models/loot-jewel-bless.json",
+    "triangles": 12,
+    "height": 0.24963999999999997
+  },
+  "loot-jewel-soul": {
+    "source": [
+      "Item/Jewel02.bmd"
+    ],
+    "file": "assets/models/loot-jewel-soul.json",
+    "triangles": 22,
+    "height": 0.21903
+  },
+  "loot-jewel-life": {
+    "source": [
+      "Item/Jewel03.bmd"
+    ],
+    "file": "assets/models/loot-jewel-life.json",
+    "triangles": 44,
+    "height": 0.26706
+  },
+  "loot-jewel-chaos": {
+    "source": [
+      "Item/Jewel15.bmd"
+    ],
+    "file": "assets/models/loot-jewel-chaos.json",
+    "triangles": 32,
+    "height": 0.33155999999999997
   },
   "skill-slash": {
     "source": [
@@ -834,81 +910,5 @@
     "file": "assets/models/lorencia-95.json",
     "triangles": 68,
     "height": 3.24032
-  },
-  "knight-armor": {
-    "source": [
-      "Player/HelmMale18.bmd",
-      "Player/ArmorMale18.bmd",
-      "Player/PantMale18.bmd",
-      "Player/GloveMale18.bmd",
-      "Player/BootMale18.bmd"
-    ],
-    "file": "assets/models/knight-armor.json",
-    "triangles": 1321,
-    "height": 2.0474200000000002
-  },
-  "wizard-armor": {
-    "source": [
-      "Player/HelmMale19.bmd",
-      "Player/ArmorMale19.bmd",
-      "Player/t_PantMale19.bmd",
-      "Player/GloveMale19.bmd",
-      "Player/BootMale19.bmd"
-    ],
-    "file": "assets/models/wizard-armor.json",
-    "triangles": 800,
-    "height": 1.97002
-  },
-  "elf-armor": {
-    "source": [
-      "Player/HelmElf05.bmd",
-      "Player/ArmorElf05.bmd",
-      "Player/PantElf05.bmd",
-      "Player/GloveElf05.bmd",
-      "Player/BootElf05.bmd"
-    ],
-    "file": "assets/models/elf-armor.json",
-    "triangles": 840,
-    "height": 1.98247
-  },
-  "loot-kundun-box": {
-    "source": [
-      "Item/MagicBox01.bmd"
-    ],
-    "file": "assets/models/loot-kundun-box.json",
-    "triangles": 44,
-    "height": 0.26034
-  },
-  "loot-jewel-bless": {
-    "source": [
-      "Item/Jewel01.bmd"
-    ],
-    "file": "assets/models/loot-jewel-bless.json",
-    "triangles": 12,
-    "height": 0.24963999999999997
-  },
-  "loot-jewel-soul": {
-    "source": [
-      "Item/Jewel02.bmd"
-    ],
-    "file": "assets/models/loot-jewel-soul.json",
-    "triangles": 22,
-    "height": 0.21903
-  },
-  "loot-jewel-life": {
-    "source": [
-      "Item/Jewel03.bmd"
-    ],
-    "file": "assets/models/loot-jewel-life.json",
-    "triangles": 44,
-    "height": 0.26706
-  },
-  "loot-jewel-chaos": {
-    "source": [
-      "Item/Jewel15.bmd"
-    ],
-    "file": "assets/models/loot-jewel-chaos.json",
-    "triangles": 32,
-    "height": 0.33155999999999997
   }
 }
