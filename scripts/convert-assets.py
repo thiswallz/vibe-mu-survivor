@@ -69,7 +69,11 @@ def matrices(bones,action=0,frame=0):
 def texture(folder,name):
  stem=Path(name.replace('\\','/')).stem.lower();files={p.stem.lower():p for p in folder.iterdir() if p.suffix.lower() in ['.ozj','.ozt','.jpg','.tga']}
  if stem not in files:return None
- p=files[stem];dest=OUT/'textures'/f'{folder.name.lower()}-{stem}.png'
+ p=files[stem]
+ preferred='.ozt' if Path(name).suffix.lower() in ['.tga','.ozt'] else '.ozj'
+ for candidate in folder.iterdir():
+  if candidate.stem.lower()==stem and candidate.suffix.lower()==preferred:p=candidate;break
+ dest=OUT/'textures'/f'{folder.name.lower()}-{stem}.png'
  if not dest.exists():
   data=p.read_bytes()
   if p.suffix.lower()=='.ozj':
@@ -181,17 +185,18 @@ if __name__=='__main__':
   subprocess.run([os.environ.get('MU_NODE','node'),str(ROOT/'scripts'/'decode-player.mjs'),str(player/'player.bmd'),str(decoded)],check=True)
   _,rig,rigActions=parse(decoded)
  playerRig=(rig,rigActions)
- for key,setname in [('knight','Male02'),('wizard','Male04'),('elf','Elf03')]:
+ for key,setname in [('knight','Male02'),('wizard','Male04'),('elf','Elf03'),('knight-armor','Male18'),('wizard-armor','Male19'),('elf-armor','Elf05')]:
   convert(key,[player/f'{part}{setname}.bmd' for part in ['Helm','Armor','Pant','Glove','Boot']],playerRig=playerRig)
  for key,num in [('spider',10),('budge',3),('bull',4),('hound',2),('giant',11)]:convert(key,[SOURCE/'Monster'/f'Monster{num:02}.bmd'],True)
  for key,name in [('tree','Tree01'),('rock','Stone01'),('statue','StoneStatue01'),('wall','StoneWall01'),('house','House01'),('house2','House02'),('fence','Fence01'),('bonfire','Bonfire01'),('streetlight','StreetLight01'),('well','Well01'),('ruin','StoneMuWall01'),('grass','Grass01')]:
   try:convert(key,[SOURCE/'Object1'/f'{name}.bmd'])
   except ValueError as e: print('skip',name,e)
  for name in ['TileGrass01.OZJ','TileGrass02.OZJ','TileGround01.OZJ','TileGround02.OZJ','TileRock01.OZJ']:texture(SOURCE/'World1',name)
+ for name in ['Chrome01.OZJ','Chrome02.OZJ','Shiny01.OZJ','AuraWave_Blue_00.OZJ']:texture(SOURCE/'Effect',name)
  for key,name in [('slash','WaveForce'),('arrow','Arrow01'),('ice','Ice01'),('fire','Fire01'),('inferno','Inferno01'),('spirit','Bone01')]:convert('skill-'+key,[SOURCE/'Skill'/(name+'.bmd')])
  for key,name in [('sword','Sword02'),('staff','Staff01'),('bow','Bow01')]:convert('weapon-'+key,[SOURCE/'Item'/(name+'.bmd')])
  for name in ['newui_menu01.OZJ','newui_menu02.OZJ','newui_menu03.OZJ','newui_menu_red.OZJ','newui_menu_blue.OZJ','newui_Exbar.OZJ','newui_skill.OZJ','newui_skillbox.OZJ','newui_Party_HpBar.OZJ','newui_Party_Lifebar01.OZJ','newui_Party_Lifebar02.OZJ']:texture(SOURCE/'Interface',name)
- for source,dest in [('Sound/sEvil.wav','evil.wav'),('Sound/sHellFire.wav','hellfire.wav'),('Sound/eIceArrow.wav','ice.wav'),('Sound/SwordInertiaAttack.wav','stab.wav'),('Music/Pub.mp3','lorencia-pub.mp3'),('Sound/eSwingLightSword.wav','knight.wav'),('Sound/sMagic.wav','wizard.wav'),('Sound/Magic_Arrow_Cast_01.wav','elf.wav'),('Sound/pLevelUp.wav','level-up.wav')]:shutil.copy2(SOURCE/source,OUT/'audio'/dest)
+ for source,dest in [('Sound/mSpider1.wav','death-spider.wav'),('Sound/mBudgeDie.wav','death-budge.wav'),('Sound/mBullDie.wav','death-bull.wav'),('Sound/mHoundDie.wav','death-hound.wav'),('Sound/mGiantDie.wav','death-giant.wav'),('Sound/pMaleScream1.wav','hurt-knight.wav'),('Sound/pMaleScream2.wav','hurt-wizard.wav'),('Sound/pFemaleScream1.wav','hurt-elf.wav'),('Sound/eMeleeHit1.wav','hit.wav'),('Sound/pDropItem.wav','armor.wav'),('Sound/sEvil.wav','evil.wav'),('Sound/sHellFire.wav','hellfire.wav'),('Sound/eIceArrow.wav','ice.wav'),('Sound/SwordInertiaAttack.wav','stab.wav'),('Music/Pub.mp3','lorencia-pub.mp3'),('Sound/eSwingLightSword.wav','knight.wav'),('Sound/sMagic.wav','wizard.wav'),('Sound/Magic_Arrow_Cast_01.wav','elf.wav'),('Sound/pLevelUp.wav','level-up.wav')]:shutil.copy2(SOURCE/source,OUT/'audio'/dest)
  convert_world_objects()
  convert_terrain()
  (OUT/'manifest.json').write_text(json.dumps(manifest,indent=2))

@@ -837,27 +837,27 @@
   },
   "knight-armor": {
     "source": [
-      "Player/HelmMale09.bmd",
-      "Player/ArmorMale09.bmd",
-      "Player/PantMale09.bmd",
-      "Player/GloveMale09.bmd",
-      "Player/BootMale09.bmd"
+      "Player/HelmMale18.bmd",
+      "Player/ArmorMale18.bmd",
+      "Player/PantMale18.bmd",
+      "Player/GloveMale18.bmd",
+      "Player/BootMale18.bmd"
     ],
     "file": "assets/models/knight-armor.json",
-    "triangles": 660,
-    "height": 1.91755
+    "triangles": 1321,
+    "height": 2.0474200000000002
   },
   "wizard-armor": {
     "source": [
-      "Player/HelmMale10.bmd",
-      "Player/ArmorMale10.bmd",
-      "Player/PantMale10.bmd",
-      "Player/GloveMale10.bmd",
-      "Player/BootMale10.bmd"
+      "Player/HelmMale19.bmd",
+      "Player/ArmorMale19.bmd",
+      "Player/PantMale19.bmd",
+      "Player/GloveMale19.bmd",
+      "Player/BootMale19.bmd"
     ],
     "file": "assets/models/wizard-armor.json",
-    "triangles": 694,
-    "height": 2.0168700000000004
+    "triangles": 800,
+    "height": 1.97002
   },
   "elf-armor": {
     "source": [

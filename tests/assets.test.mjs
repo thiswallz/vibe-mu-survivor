@@ -46,3 +46,9 @@ test('arena selection excludes houses, walls and large props',async()=>{
  assert.equal(keepArenaProp(30,{height:7,width:2,depth:2}),false);
  assert.equal(keepArenaProp(58,{height:2,width:1.5,depth:1.5}),true);
 });
+
+test('reward armor sets retain original models, moving poses and chrome assets',()=>{
+ for(const id of ['knight','wizard','elf']){const model=JSON.parse(fs.readFileSync(path.join(ui,'assets/models',id+'-armor.json')));assert.ok(model.parts.length);assert.equal(model.clips.attack.sourceAction,id==='knight'?136:id==='wizard'?149:122);assert.ok(model.parts.some(p=>p.upperBody));for(const part of model.parts)if(part.texture)assert.ok(fs.existsSync(path.join(ui,part.texture)));}
+ for(const name of ['effect-chrome01.png','effect-shiny01.png','effect-aurawave_blue_00.png'])assert.ok(fs.existsSync(path.join(ui,'assets/textures',name)));
+ for(const id of ['spider','budge','bull','hound','giant']){const bytes=fs.readFileSync(path.join(ui,'assets/audio','death-'+id+'.wav'));assert.equal(bytes.subarray(0,4).toString(),'RIFF');}
+});

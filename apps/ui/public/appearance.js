@@ -9,8 +9,8 @@ export function flashActor(root,power,color='#ffdfac'){
 export function enhanceArmor(root,level,chrome){
  const body=root.userData.body;for(const original of [...body.children]){
   if(!original.isMesh||!original.userData.armor)continue;
-  const mat=original.material;mat.roughness=level?.3:.83;mat.emissiveMap=level?mat.map:null;mat.emissive.set(level===15?'#c9b9ff':level===13?'#af7134':'#000000');mat.emissiveIntensity=level===15?.38:level===13?.2:0;original.userData.baseEmissive=mat.emissive.clone();original.userData.baseIntensity=mat.emissiveIntensity;mat.needsUpdate=true;
-  if(level){const overlay=new THREE.Mesh(original.geometry,new THREE.MeshMatcapMaterial({matcap:chrome,color:level===15?'#e9daff':'#ffe4a1',transparent:true,opacity:level===15?.46:.3,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));overlay.userData.chrome=true;overlay.userData.upperBody=original.userData.upperBody;original.add(overlay);original.userData.overlay=overlay;}
+  const mat=original.material;mat.roughness=level?.3:.83;mat.emissiveMap=level?mat.map:null;mat.emissive.set(level===15?'#c9b9ff':level===13?'#af7134':'#000000');mat.emissiveIntensity=level===15?.24:level===13?.16:0;original.userData.baseEmissive=mat.emissive.clone();original.userData.baseIntensity=mat.emissiveIntensity;mat.needsUpdate=true;
+  if(level){const overlay=new THREE.Mesh(original.geometry,new THREE.MeshMatcapMaterial({matcap:chrome,color:level===15?'#e9daff':'#ffe4a1',transparent:true,opacity:level===15?.3:.2,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));overlay.userData.chrome=true;overlay.userData.upperBody=original.userData.upperBody;original.add(overlay);original.userData.overlay=overlay;}
  }
 }
 export function createAura(texture,shiny){

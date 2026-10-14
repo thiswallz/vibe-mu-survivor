@@ -24,13 +24,13 @@ Refresh the browser after editing. Use `PORT=5174 npm start` to choose another p
 
 - Choose Dark Knight, Dark Wizard, or Fairy Elf.
 - Move with WASD or arrow keys. Holding the mouse on the arena also moves toward the pointer (walk nearby, run farther away). Touch devices have a joystick.
-- Attacks are automatic. Choose the active skill during battle with the two skill buttons or keys 1 and 2. Space or right click dashes with a three-second cooldown.
-- Collect blue experience jewels; choose a blessing each time you level up.
+- Attacks are automatic. Each class starts with one skill. Learn its second skill from a level-up choice, then switch with the two skill buttons or keys 1 and 2. Space or right click dashes with a three-second cooldown.
+- Collect blue experience jewels; choose a blessing each time you level up. New skills, a damaging aura, armor rewards, and +13 / +15 enhancements become available as you progress.
 - Survive ten 30-second waves and defeat the Lorencia Guardian. The guardian appears at 04:30; play continues after 05:00 if it is still alive.
 - Escape pauses; losing browser focus also pauses. Retry or choose another hero after a run.
 - Music and effects begin after your first interaction. Toggle audio at the top right.
 
-The stage contains five enemy types: Spider, Budge Dragon, Bull Fighter, Hound, and Giant. The final guardian is a larger, stronger Giant. Each class has two switchable automatic skills: Dark Knight — Twisting Slash / Death Stab; Dark Wizard — Evil Spirits / Hellfire; Fairy Elf — Multiple Shot / Ice Arrow. Ice Arrow slows enemies. Skill names and visuals come from MU; combat tuning is simplified for this survivor PoC.
+The stage contains five enemy types: Spider, Budge Dragon, Bull Fighter, Hound, and Giant. The final guardian is a larger, stronger Giant. Each class has two learnable automatic skills: Dark Knight — Twisting Slash / Death Stab; Dark Wizard — Evil Spirits / Hellfire; Fairy Elf — Multiple Shot / Ice Arrow. Ice Arrow slows enemies. Skill names and visuals come from MU; combat tuning is simplified for this survivor PoC.
 
 ## Monorepo architecture
 
@@ -64,11 +64,15 @@ App/
 
 The converted assets are already included under `apps/ui/public/assets`; the source client folder is not needed to run the demo. `assets/manifest.json` records the source BMD files and triangle counts. Original files remain untouched.
 
-The converter reads BMD v10 and decodes the supplied BMD v15 player animation with an offline LEA helper. Original S20 idle, walk and weapon-specific run poses are baked onto the armor meshes with quaternion interpolation. Root motion is removed and strides follow actual distance travelled; weapons attach to animated hand sockets. Attacks use a brief recoil while the new spell visuals play. Four walk poses are sampled for enemies. OZJ/OZT images become PNG textures. World props and weapons are converted from the client. Spell effects are custom animated WebGL trails, glow, sparks and frost/fire bursts inspired by the original skill names; original skill sounds and HUD icons remain.
+The converter reads BMD v10 and decodes the supplied BMD v15 player animation with an offline LEA helper. Original S20 idle, walk and weapon-specific run poses are baked onto the armor meshes with quaternion interpolation. Root motion is removed and strides follow actual distance travelled; weapons attach to animated hand sockets. Attacks use sampled spin, thrust, casting and bow motions from the player animation file. During movement, ranged casts blend upper-body poses over the locomotion cycle. Attack playback speeds up with attack haste. Four walk poses are sampled for enemies. OZJ/OZT images become PNG textures. World props and weapons are converted from the client. Spell effects are custom animated WebGL trails, glow, sparks and frost/fire bursts inspired by the original skill names; original skill sounds and HUD icons remain.
 
 Lorencia uses the actual `World1/Terrain.map` texture layers, `TerrainHeight.OZB` height field, and 511 placements from `Terrain.obj`, cropped to an 80 × 80 tile region around town. Object types, transforms and scales follow the original client mapping. A runtime filter keeps only small and medium props; large structures, roofs, houses and gates are excluded. Solid props have collision footprints. Players slide along their edges, and enemies steer around them. The player starts in a free part of the plaza. Navigation remains a simple local steering system for the PoC.
 
-Health orb, health gauge, experience fill, skill frames and skill icons use converted `Data/Interface/newui_*` assets. The bottom dock groups vitality (orb, current/maximum health and gauge), both switchable skills with cooldown indicators, dash, pause, and experience. Labels and survivor-specific controls use HTML/CSS, with layouts checked at desktop, portrait and landscape sizes.
+Health orb, health gauge, experience fill, skill frames and skill icons use converted `Data/Interface/newui_*` assets. Wave packs intensify during the final eight seconds of each 30-second wave. Up to 180 enemies are retained at once. Hit feedback includes a brief armor/body flash, recoil, floating damage, and a red edge flash when the hero takes damage. Death feedback includes a collapsing/fading model, rising soul light, sparks, and the matching original monster sound.
+
+One additional armor set is available per class: Dark Phoenix (`Male18`), Grand Soul (`Male19`), and Guardian (`Elf05`). +13 and +15 are render enhancements over the actual armor meshes, using the client's Chrome and Shiny textures; they are not separate model files. The aura uses `AuraWave_Blue_00` and `Shiny01` and damages nearby enemies.
+
+The bottom dock groups vitality (orb, current/maximum health and gauge), both switchable skills with cooldown indicators, dash, pause, and experience. Labels and survivor-specific controls use HTML/CSS, with layouts checked at desktop, portrait and landscape sizes.
 
 Music: `Data/Music/Pub.mp3` (Lorencia bar). Effects: `eSwingLightSword.wav`, `sEvil.wav`, `sHellFire.wav`, `SwordInertiaAttack.wav`, `eIceArrow.wav`, `Magic_Arrow_Cast_01.wav`, and `pLevelUp.wav` from `Data/Sound`.
 

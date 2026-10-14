@@ -27,5 +27,18 @@
     "Skill/Bone01.bmd"
   ],
   "music": "Music/Pub.mp3",
-  "spellRendering": "Custom WebGL effects inspired by MU skill names; apps/ui/public/effects.js"
+  "spellRendering": "Custom WebGL effects inspired by MU skill names; apps/ui/public/effects.js",
+  "armorEffects": [
+    "Effect/Chrome01.OZJ",
+    "Effect/Chrome02.OZJ",
+    "Effect/Shiny01.OZJ"
+  ],
+  "aura": "Effect/AuraWave_Blue_00.OZJ",
+  "monsterAudio": [
+    "Sound/mSpider1.wav",
+    "Sound/mBudgeDie.wav",
+    "Sound/mBullDie.wav",
+    "Sound/mHoundDie.wav",
+    "Sound/mGiantDie.wav"
+  ]
 }

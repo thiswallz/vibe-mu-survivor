@@ -47,7 +47,7 @@ export function moveEntity(entity,dx,dz,obstacles=[],radius=.42){
 }
 export function createRun(id,random=Math.random){
  const hero=CLASSES.find(c=>c.id===id); if(!hero)throw new Error('Unknown class');
- return {hero,random,skill:SKILLS[id][0].id,unlockedSkills:[SKILLS[id][0].id],auraLevel:0,auraTimer:0,armorEquipped:false,enhancement:0,hitFlash:0,lastSurgeWave:0,moving:false,walking:false,travel:0,obstacles:[],attackAnimation:0,phase:'playing',time:0,wave:1,hp:hero.hp,maxHp:hero.hp,speed:hero.speed,damage:hero.damage,cooldown:hero.cooldown,slashRange:hero.range,projectiles:id==='elf'?2:1,magnet:3.1,x:0,z:0,facing:0,enemies:[],shots:[],gems:[],events:[],kills:0,level:1,xp:0,xpNeeded:12,spawnTimer:.8,attackTimer:0,dashCooldown:0,dashTime:0,invulnerable:0,bossSpawned:false,bossDefeated:false,nextId:1,choices:[],pendingLevels:0};
+ return {hero,random,skill:SKILLS[id][0].id,unlockedSkills:[SKILLS[id][0].id],auraLevel:0,auraTimer:0,armorEquipped:false,enhancement:0,hitFlash:0,lastSurgeWave:0,moving:false,walking:false,travel:0,obstacles:[],attackAnimation:0,attackDuration:.6,phase:'playing',time:0,wave:1,hp:hero.hp,maxHp:hero.hp,speed:hero.speed,damage:hero.damage,cooldown:hero.cooldown,slashRange:hero.range,projectiles:id==='elf'?2:1,magnet:3.1,x:0,z:0,facing:0,enemies:[],shots:[],gems:[],events:[],kills:0,level:1,xp:0,xpNeeded:12,spawnTimer:.8,attackTimer:0,dashCooldown:0,dashTime:0,invulnerable:0,bossSpawned:false,bossDefeated:false,nextId:1,choices:[],pendingLevels:0};
 }
 function event(s,type,data={}){s.events.push({type,...data})}
 export function spawnEnemy(s,type,elite=false){
@@ -90,7 +90,7 @@ export function tick(s,dt,input={}){
   const nearest=[...living].sort((a,b)=>dist(a,s)-dist(b,s));
   const skill=SKILLS[s.hero.id].find(k=>k.id===s.skill);const range=skill.id==='slash'?s.slashRange:skill.range;
   if(dist(nearest[0],s)<range){
-   s.attackTimer=s.cooldown*skill.cooldown;s.attackAnimation=.6;s.animationSkill=skill.id;
+   s.attackTimer=s.cooldown*skill.cooldown;s.attackDuration=Math.min(.6,s.cooldown*skill.cooldown*.9);s.attackAnimation=s.attackDuration;s.animationSkill=skill.id;
    s.attackFacing=Math.atan2(nearest[0].x-s.x,nearest[0].z-s.z);if(!s.moving)s.facing=Math.atan2(nearest[0].x-s.x,nearest[0].z-s.z);
    event(s,'attack',{hero:s.hero.id,skill:skill.id,x:s.x,z:s.z,facing:Math.atan2(nearest[0].x-s.x,nearest[0].z-s.z),range});
    const damage=s.damage*skill.damage;
