@@ -28,6 +28,27 @@ export function flashActor(root: THREE.Group, power: number, color = '#ffdfac') 
     }
   });
 }
+export function enhancementAppearance(level: number) {
+  const tint =
+    level >= 15
+      ? '#e5dcff'
+      : level >= 13
+        ? '#b9e6ff'
+        : level >= 11
+          ? '#eac6ff'
+          : level >= 9
+            ? '#ffe3a0'
+            : level >= 7
+              ? '#ffffff'
+              : level >= 5
+                ? '#748cff'
+                : level >= 3
+                  ? '#d65c50'
+                  : '#ffffff';
+  const glow = level >= 7 ? 0.18 + (level - 7) * 0.045 : 0;
+  const emissive = level >= 7 ? 0.24 + (level - 7) * 0.045 : level >= 3 ? 0.07 : level * 0.008;
+  return { tint, glow, emissive };
+}
 export function enhanceArmor(
   root: THREE.Group,
   level: number,
@@ -38,26 +59,31 @@ export function enhanceArmor(
   root.userData.enhancement = level;
   root.userData.armorSparkles = [];
   const body = root.userData.body;
-  for (const original of [...body.children]) {
+  const surfaces: THREE.Mesh[] = [];
+  body.traverse((child: THREE.Mesh) => {
+    if (child.isMesh && child.userData.armor) surfaces.push(child);
+  });
+  for (const original of surfaces) {
     if (!original.isMesh || !original.userData.armor) continue;
     const pieceLevel = equipment?.[original.userData.slot as keyof Equipment]?.enhancement;
     const activeLevel = equipment ? pieceLevel || 0 : level;
     const mat = original.material;
+    if (!(mat instanceof THREE.MeshStandardMaterial)) continue;
     mat.roughness = activeLevel ? 0.23 : 0.83;
     mat.metalness = activeLevel ? 0.48 : 0.12;
     mat.emissiveMap = activeLevel ? mat.map : null;
-    mat.emissive.set(activeLevel ? '#ffffff' : '#000000');
-    mat.emissiveIntensity =
-      activeLevel >= 7 ? 0.08 + (activeLevel - 7) * 0.055 : activeLevel * 0.007;
+    const appearance = enhancementAppearance(activeLevel);
+    mat.emissive.set(activeLevel ? appearance.tint : '#000000');
+    mat.emissiveIntensity = appearance.emissive;
     original.userData.baseEmissive = mat.emissive.clone();
     original.userData.baseIntensity = mat.emissiveIntensity;
     mat.needsUpdate = true;
     if (activeLevel < 7) continue;
     const material = new THREE.MeshMatcapMaterial({
       matcap: chrome,
-      color: activeLevel === 15 ? '#fff5e0' : '#ffe1a3',
+      color: appearance.tint,
       transparent: true,
-      opacity: 0.06 + (activeLevel - 7) * 0.055,
+      opacity: appearance.glow,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
       side: THREE.DoubleSide,
@@ -110,7 +136,13 @@ export function updateArmor(root: THREE.Group, time: number) {
     if (mesh.userData.chrome) {
       mesh.userData.clock.value = time;
       (mesh.material as THREE.MeshMatcapMaterial).opacity =
-        0.06 + (mesh.userData.level - 7) * 0.055 + Math.sin(time * 2) * 0.06;
+        enhancementAppearance(mesh.userData.level).glow +
+        Math.sin(time * 2 + mesh.userData.level) * 0.045;
+      const material = mesh.material as THREE.MeshMatcapMaterial;
+      if (mesh.userData.level >= 11)
+        material.color
+          .set(enhancementAppearance(mesh.userData.level).tint)
+          .lerp(new THREE.Color('#fff1cb'), Math.max(0, Math.sin(time * 1.6)) * 0.45);
     }
   });
   for (const spark of root.userData.armorSparkles) {

@@ -1,3 +1,4 @@
+import { enhancementAppearance } from './appearance.js';
 import type { EquipmentActor, InventoryItem, EquipmentSlot } from '@mu-survivor/models';
 import { ITEMS } from '@mu-survivor/game/loot';
 import {
@@ -100,8 +101,11 @@ export function createInventoryPanel({
         (s.equipment[def.slot] ? itemKey(s.equipment[def.slot]!) : null) === itemKey(chosen),
       compatible = def?.hero === s.hero.id;
     const equippedCount = SLOTS.filter((slot) => s.equipment[slot]).length;
-    const picture = (item: Pick<InventoryItem, 'id' | 'enhancement'>) =>
-      `<img src="${icon(item.id)}" alt="" draggable="false" style="filter:brightness(${1 + (item.enhancement || 0) * 0.018})">`;
+    const picture = (item: Pick<InventoryItem, 'id' | 'enhancement'>) => {
+      const level = item.enhancement || 0,
+        appearance = enhancementAppearance(level);
+      return `<img src="${icon(item.id)}" alt="" draggable="false" style="filter:brightness(${1 + appearance.emissive}) ${level >= 7 ? `drop-shadow(0 0 ${2 + (level - 7) * 0.4}px ${appearance.tint})` : level >= 3 ? `drop-shadow(0 0 1px ${appearance.tint})` : ''}">`;
+    };
     overlay.innerHTML = `<section class="inventory-window" role="dialog" aria-modal="true" aria-labelledby="inventory-title"><header class="inventory-title"><h2 id="inventory-title">Inventory</h2><button id="inventory-close" aria-label="Close inventory">×</button></header><div class="inventory-character"><b>${s.hero.name || { knight: 'Dark Knight', wizard: 'Dark Wizard', elf: 'Fairy Elf' }[s.hero.id]}</b><span>${equippedCount} / 6 equipped</span></div><div class="equipment-slots">${SLOTS.map(
       (slot) => {
         const item = s.equipment[slot];

@@ -1,3 +1,4 @@
+import { createCharacterPanel } from './character-panel.js';
 import { createItemPreview } from './item-preview.js';
 import './styles/style.css';
 import './styles/hud.css';
@@ -244,6 +245,12 @@ function weapon(root: THREE.Group, id: HeroId, item?: EquippedItem | null) {
   const name = id === 'knight' ? 'sword' : id === 'wizard' ? 'staff' : 'bow';
   const attachment = new THREE.Group();
   attachment.add(assets[item ? ITEMS[item.id].model : 'weapon-' + name].template.clone());
+  attachment.traverse((child) => {
+    if (child instanceof THREE.Mesh) {
+      child.userData.armor = !!item;
+      child.userData.slot = 'weapon';
+    }
+  });
   root.userData.weaponItem = item?.id || 'starter-' + name;
   root.userData.body.add(attachment);
   root.userData.weapon = attachment;
@@ -607,6 +614,27 @@ function openInventory() {
   pointer.active = false;
   inventoryPanel.open();
 }
+const characterPanel = createCharacterPanel(() => {
+  characterPanel.hide();
+  closeInventory();
+});
+function openCharacter() {
+  if (!ready) return;
+  if (characterPanel.visible) {
+    characterPanel.hide();
+    closeInventory();
+    return;
+  }
+  if (inventoryPanel.visible) closeInventory();
+  openInventory();
+  inventoryPanel.hide();
+  characterPanel.show(inventoryContext(), run);
+}
+const characterButton = document.createElement('button');
+characterButton.id = 'character-button';
+characterButton.textContent = 'CHARACTER · C';
+characterButton.onclick = openCharacter;
+document.body.append(characterButton);
 function refreshStash() {
   $('stash').textContent = 'INVENTORY · ' + readInventory().reduce((n, i) => n + i.quantity, 0);
 }
@@ -790,6 +818,16 @@ $('dash-button').onclick = () => {
   dashRequested = true;
 };
 addEventListener('keydown', (e) => {
+  if (e.code === 'KeyC' && !e.repeat) {
+    openCharacter();
+    return;
+  }
+  if (characterPanel.visible) {
+    if (e.code === 'Escape' || e.code === 'KeyI') {
+      characterPanel.hide();
+      closeInventory();
+    } else return;
+  }
   if (e.code === 'KeyI' && !e.repeat) {
     openInventory();
     return;

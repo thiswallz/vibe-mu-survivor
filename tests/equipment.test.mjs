@@ -110,3 +110,25 @@ test('equipped copies disappear from the bag and stats increase with every enhan
         itemStats({ id: 'knight-helm', enhancement: level - 1 }).defense,
     );
 });
+
+test('equipment transfers conserve copies and keep the bag separate through save/load', () => {
+  const s = createRun('knight');
+  s.inventory = [
+    { id: 'knight-helm', enhancement: 7, quantity: 2 },
+    { id: 'knight-helm', enhancement: 15, quantity: 1 },
+  ];
+  equipItem(s, s.inventory[0]);
+  assert.equal(s.inventory[0].quantity, 1);
+  equipItem(s, s.inventory[1]);
+  assert.deepEqual(s.inventory, [{ id: 'knight-helm', enhancement: 7, quantity: 2 }]);
+  const storage = memory();
+  saveRunInventory(s, storage);
+  const profile = readProfile(storage);
+  assert.deepEqual(profile.items, s.inventory);
+  assert.equal(profile.loadouts.knight.helm.enhancement, 15);
+  unequipSlot(s, 'helm');
+  assert.equal(
+    s.inventory.reduce((sum, item) => sum + item.quantity, 0),
+    3,
+  );
+});

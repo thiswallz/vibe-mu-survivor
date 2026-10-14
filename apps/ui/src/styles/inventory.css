@@ -406,3 +406,53 @@ body.playing #stash {
     pointer-events: auto;
   }
 }
+
+#character-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 35;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 20px 42px;
+  background: #03070766;
+  backdrop-filter: blur(2px);
+}
+.character-stat {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 12px;
+  margin: 4px 0;
+  background: #090f0bd9;
+  border: 1px solid #60563d;
+}
+.character-stat b {
+  color: #ecd492;
+}
+.stat-heading {
+  font: 14px Georgia;
+  color: #ceb780;
+  margin: 16px 0 8px;
+}
+#character-button {
+  position: fixed;
+  right: 18px;
+  top: 64px;
+  z-index: 12;
+  color: #dfcd9e;
+  background: #11180eee;
+  border: 1px solid #8e7954;
+  padding: 7px 10px;
+  font-size: 11px;
+  cursor: pointer;
+}
+@media (max-width: 750px) {
+  #character-overlay {
+    padding: 12px;
+    justify-content: center;
+  }
+  #character-button {
+    top: 58px;
+    right: 10px;
+  }
+}

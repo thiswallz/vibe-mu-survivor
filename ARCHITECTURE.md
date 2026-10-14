@@ -22,7 +22,7 @@ All six slots are independently owned: helm, armor, pants, gloves, boots and wea
 
 A pickup enters inventory and auto-equips if its compatible slot is empty. Manually equipped items must be owned and match the hero. Replacing armor recalculates health/defense; replacing weapons recalculates damage without compounding modifiers. Inventory UI pauses active combat, supports equip/unequip and opening boxes, and returns to the previous battle or results screen.
 
-The persistence adapter uses a versioned profile containing inventory items and separate loadouts for the three heroes. It migrates the original stash format, rejects unowned loadout entries, and saves pickups and equipment changes immediately. This implementation is browser-local; a future authenticated service can implement the same contracts without changing game/drop logic. Multiple browser tabs are not synchronized live.
+The persistence adapter uses a versioned profile containing inventory items and separate loadouts for the three heroes. Version 3 stores only unequipped items in the bag. Equip and unequip transfer one copy between bag and loadout; replacements return the previous piece to the bag. It migrates older ownership-based saves by removing worn copies from the bag, validates class and slot entries, and saves pickups and equipment changes immediately. This implementation is browser-local; a future authenticated service can implement the same contracts without changing game/drop logic. Multiple browser tabs are not synchronized live.
 
 ## Build and checks
 
