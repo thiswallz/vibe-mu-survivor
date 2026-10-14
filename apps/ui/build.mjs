@@ -7,6 +7,7 @@ export async function build(){
  await rm(dist,{recursive:true,force:true});
  await cp(path.join(ui,'public'),dist,{recursive:true});
  await mkdir(path.join(dist,'shared'),{recursive:true});
+ await cp(path.join(ui,'../../packages/game/src'),path.join(dist,'shared'),{recursive:true});
  await cp(path.join(ui,'../../packages/game/src/index.js'),path.join(dist,'shared/game.js'));
  console.log('UI built: apps/ui/dist (assets and shared game logic included)');
 }

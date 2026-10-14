@@ -30,7 +30,7 @@ Docker, Railway, a configurable private API connection, and environment examples
 - Move with WASD or arrow keys. Holding the mouse on the arena also moves toward the pointer (walk nearby, run farther away). Touch devices have a joystick.
 - Attacks are automatic. Each class starts with one skill. Learn its second skill from a level-up choice, then switch with the two skill buttons or keys 1 and 2. Space or right click dashes with a three-second cooldown.
 - Collect blue experience jewels; choose a blessing each time you level up. New skills, a damaging aura, armor rewards, and +13 / +15 enhancements become available as you progress.
-- Survive ten 30-second waves and defeat the Lorencia Guardian. The guardian appears at 04:30; play continues after 05:00 if it is still alive.
+- Survive ten 18-second waves and defeat the Lorencia Guardian. The guardian appears at 02:42; play continues after 03:00 if it is still alive.
 - Escape pauses; losing browser focus also pauses. Retry or choose another hero after a run.
 - Music and effects begin after your first interaction. Toggle audio at the top right.
 
@@ -72,9 +72,9 @@ The converter reads BMD v10 and decodes the supplied BMD v15 player animation wi
 
 Lorencia uses the actual `World1/Terrain.map` texture layers, `TerrainHeight.OZB` height field, and 511 placements from `Terrain.obj`, cropped to an 80 × 80 tile region around town. Object types, transforms and scales follow the original client mapping. A runtime filter keeps only small and medium props; large structures, roofs, houses and gates are excluded. Solid props have collision footprints. Players slide along their edges, and enemies steer around them. The player starts in a free part of the plaza. Navigation remains a simple local steering system for the PoC.
 
-Health orb, health gauge, experience fill, skill frames and skill icons use converted `Data/Interface/newui_*` assets. Wave packs intensify during the final eight seconds of each 30-second wave. Up to 180 enemies are retained at once. Hit feedback includes a brief armor/body flash, recoil, floating damage, and a red edge flash when the hero takes damage. Death feedback includes a collapsing/fading model, rising soul light, sparks, and the matching original monster sound.
+Health orb, health gauge, experience fill, skill frames and skill icons use converted `Data/Interface/newui_*` assets. Wave packs intensify during the final five seconds of each 18-second wave. Up to 180 enemies are retained at once. Hit feedback includes a brief armor/body flash, recoil, floating damage, and a red edge flash when the hero takes damage. Death feedback includes a collapsing/fading model, rising soul light, sparks, and the matching original monster sound.
 
-One additional armor set is available per class: Dark Phoenix (`Male18`), Grand Soul (`Male19`), and Guardian (`Elf05`). +13 and +15 are render enhancements over the actual armor meshes, using the client's Chrome and Shiny textures; they are not separate model files. The aura uses `AuraWave_Blue_00` and `Shiny01` and damages nearby enemies.
+Armor names are verified from the supplied S20 Local/item.bmd table: Dragon, Legendary and Wind starter sets. Grand Soul uses t_PantMale19.bmd for its pants, matching the client mapping. One additional armor set is available per class: Dark Phoenix (`Male18`), Grand Soul (`Male19`), and Guardian (`Elf05`). +13 and +15 are render enhancements over the actual armor meshes, using the client's Chrome and Shiny textures; they are not separate model files. The aura uses `AuraWave_Blue_00` and `Shiny01` and damages nearby enemies.
 
 The bottom dock groups vitality (orb, current/maximum health and gauge), both switchable skills with cooldown indicators, dash, pause, and experience. Labels and survivor-specific controls use HTML/CSS, with layouts checked at desktop, portrait and landscape sizes.
 
@@ -90,3 +90,9 @@ npm run build
 The converter expects `../Mu Eternals S20 1-2/Data` relative to `App`. Keep the original folder there only for reconversion.
 
 The offline LEA helper is adapted from [xulek/muonline-bmd-viewer](https://github.com/xulek/muonline-bmd-viewer) (ISC; attribution in `scripts/vendor/LEA-LICENSE.txt`). Three.js 0.180.0 is vendored for offline use. Its MIT license is in `apps/ui/public/vendor/THREE-LICENSE.txt`. MU models, textures, music and sounds come from the supplied client and retain their original ownership. This repository is an investor demonstration, not a production MU client.
+
+## Stage loot and saved inventory
+
+Up to five item drops per run: Kundun boxes and a few original MU jewels. Move close to collect. The end-of-run screen lists collected items and banks them in this browser's stash, including after defeat. Opening boxes and equipping stash items in later stages are future features. Browser storage is local to the device and site origin; the localhost stash does not migrate to Railway automatically. No account is needed.
+
+`packages/game/src/loot.js` owns the item catalog, bounded drops, collection and inventory merging; `apps/ui/public/inventory.js` adapts persistence to versioned localStorage. `audio.js` owns native monster voice pools and attenuation. Critical attacks have a 12% base chance, deal 50% extra damage, and display larger cyan numbers; Critical precision upgrades add chance. These combat values are PoC tuning.

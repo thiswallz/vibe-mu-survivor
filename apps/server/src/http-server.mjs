@@ -39,11 +39,13 @@ export function createServer({production=false,serveUI=true,upstream,uiRoot}={})
    res.on('close',()=>proxy.destroy());proxy.end();return;
   }
   if(requested==='/api/health'){json(200,{ok:true,game:'MU Survivor',mode:production?'production':'development'});return;}
-  if(requested==='/api/demo'){json(200,{stage:'Lorencia',durationSeconds:300,characters:3,enemyTypes:5,skillsPerCharacter:2,accounts:false});return;}
+  if(requested==='/api/demo'){json(200,{stage:'Lorencia',durationSeconds:180,characters:3,enemyTypes:5,skillsPerCharacter:2,accounts:false});return;}
   if(requested.startsWith('/api/')||!serveUI){res.writeHead(404).end('Not found');return;}
   const shared=path.join(app,'packages/game/src/index.js');
-  const file=!production&&requested==='/shared/game.js'?shared:path.resolve(root,'.'+(requested==='/'?'/index.html':requested));
-  if(!file.startsWith(root+path.sep)&&!(file===shared&&!production)){res.writeHead(403).end();return;}
+  const sharedLoot=path.join(app,'packages/game/src/loot.js');
+  const sharedInventory=path.join(app,'packages/game/src/inventory.js');
+  const file=!production&&requested==='/shared/inventory.js'?sharedInventory:!production&&requested==='/shared/loot.js'?sharedLoot:!production&&requested==='/shared/game.js'?shared:path.resolve(root,'.'+(requested==='/'?'/index.html':requested));
+  if(!file.startsWith(root+path.sep)&&!([shared,sharedLoot,sharedInventory].includes(file)&&!production)){res.writeHead(403).end();return;}
   fs.stat(file,(error,stat)=>{
    if(error||!stat.isFile()){res.writeHead(404).end('Not found');return;}
    let start=0,end=stat.size-1,status=200;

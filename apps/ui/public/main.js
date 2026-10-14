@@ -1,8 +1,11 @@
-import {prepareActor,disposeActor,flashActor,enhanceArmor,createAura,updateAura} from './appearance.js';
+import {GameAudio,MONSTER_AUDIO} from './audio.js';
+import {ITEMS,mergeInventory} from './shared/loot.js';
+import {readInventory,bankRun} from './inventory.js';
+import {prepareActor,disposeActor,flashActor,enhanceArmor,updateArmor,createAura,updateAura} from './appearance.js';
 import {SpellEffects} from './effects.js';
 import {keepArenaProp,solidArenaProp} from './scene-layout.js';
 import * as THREE from './vendor/three.module.js';
-import {CLASSES,ENEMIES,SKILLS,UPGRADES,ARMOR,upgradeDefinition,createRun,tick,chooseUpgrade,setSkill,positionClear,DURATION,ARENA} from './shared/game.js';
+import {CLASSES,ENEMIES,SKILLS,UPGRADES,ARMOR,STARTER_ARMOR,WAVE_SECONDS,SURGE_SECONDS,upgradeDefinition,createRun,tick,chooseUpgrade,setSkill,positionClear,DURATION,ARENA} from './shared/game.js';
 const $=id=>document.getElementById(id);
 const icons={knight:'⚔',wizard:'✦',elf:'➶'};
 let selected='knight',run=null,ready=false,muted=false,last=0,accumulator=0,toastTimer=0,dashRequested=false;
@@ -27,7 +30,7 @@ async function loadModel(name){
   const map=part.texture?await loadTexture(part.texture):null;
   const mat=new THREE.MeshStandardMaterial({map,color:map?'#ffffff':'#b3aaa0',roughness:.83,metalness:.12,side:THREE.DoubleSide,alphaTest:.45});
   const terrainObject=Number(name.split('-')[1]);if(name.startsWith('lorencia-')&&terrainObject<=27&&map){mat.alphaMap=map;mat.alphaTest=.12;}if(name.startsWith('lorencia-')&&[50,51].includes(terrainObject)){mat.transparent=true;mat.blending=THREE.AdditiveBlending;mat.depthWrite=false;mat.alphaTest=0;mat.emissiveMap=map;mat.emissive.set('#ffffff');mat.emissiveIntensity=.8;}
-  if(name.startsWith('skill-')){mat.transparent=true;mat.blending=THREE.AdditiveBlending;mat.depthWrite=false;mat.alphaTest=0;mat.emissive.set('#666666');mat.emissiveMap=map;mat.emissiveIntensity=1.2;}const mesh=new THREE.Mesh(g,mat);mesh.userData.upperBody=!!part.upperBody;mesh.userData.armor=!/(skin|hair|hide)/i.test(part.texture||'');template.add(mesh);
+  if(name.startsWith('skill-')){mat.transparent=true;mat.blending=THREE.AdditiveBlending;mat.depthWrite=false;mat.alphaTest=0;mat.emissive.set('#666666');mat.emissiveMap=map;mat.emissiveIntensity=1.2;}const mesh=new THREE.Mesh(g,mat);mesh.userData.upperBody=!!part.upperBody;mesh.userData.armor=/player-(head_|upper_|lower_|gloves_|boots_)/i.test(part.texture||'');mesh.userData.sourceTexture=part.sourceTexture;template.add(mesh);
  }
  assets[name]={template,data};
 }
@@ -61,7 +64,7 @@ function attackPose(root,clipName,elapsed,duration,moving,dt){
 let appearanceKey='';
 function refreshAppearance(){
  const key=run.hero.id+(run.armorEquipped?'-armor':'')+':'+run.enhancement;if(key===appearanceKey)return;appearanceKey=key;
- if(heroModel){playGroup.remove(heroModel);disposeActor(heroModel);}heroModel=model(run.hero.id+(run.armorEquipped?'-armor':''),2.4);weapon(heroModel,run.hero.id);addShadow(heroModel,1);prepareActor(heroModel);enhanceArmor(heroModel,run.enhancement,chromeTexture);playGroup.add(heroModel);
+ if(heroModel){playGroup.remove(heroModel);disposeActor(heroModel);}heroModel=model(run.hero.id+(run.armorEquipped?'-armor':''),2.4);weapon(heroModel,run.hero.id);addShadow(heroModel,1);prepareActor(heroModel);enhanceArmor(heroModel,run.enhancement,chromeTexture,shinyTexture);playGroup.add(heroModel);
 }
 function heightAt(x,z){
  if(!terrainData)return 0;const size=terrainData.size,spacing=terrainData.spacing;const tx=Math.max(0,Math.min(size-.001,(x+size*spacing/2)/spacing)),ty=Math.max(0,Math.min(size-.001,(size*spacing/2-z)/spacing));const ix=Math.floor(tx),iy=Math.floor(ty),fx=tx-ix,fy=ty-iy,h=terrainData.heights;
@@ -86,12 +89,14 @@ async function world(){
   const r=ring(1.65,hero.color);r.position.copy(p.position);r.position.y+=.05;menuGroup.add(r);
  }
 }
-const music=new Audio('assets/audio/lorencia-pub.mp3');music.loop=true;music.volume=.24;
-const sounds={};for(const id of ['knight','wizard','elf','level-up','evil','hellfire','ice','stab','death-spider','death-budge','death-bull','death-hound','death-giant','hurt-knight','hurt-wizard','hurt-elf','hit','armor'])sounds[id]=Array.from({length:3},()=>{const a=new Audio(`assets/audio/${id}.wav`);a.volume=id==='level-up'?.4:.16;return a;});
-const soundTimes=new Map();
-function effect(id){if(muted)return;const now=performance.now();if((id.startsWith('death-')||id==='hit')&&now-(soundTimes.get(id)||-1000)<120)return;soundTimes.set(id,now);const pool=sounds[id];const a=pool.find(a=>a.paused)||pool[0];a.currentTime=0;a.play().catch(()=>{});}
-function startMusic(){if(!muted)music.play().catch(()=>{});}
-$('sound').onclick=()=>{muted=!muted;music.muted=muted;for(const pool of Object.values(sounds))for(const a of pool)a.muted=muted;$('sound').textContent=muted?'♪ SOUND OFF':'♪ SOUND ON';$('sound').setAttribute('aria-label',muted?'Unmute audio':'Mute audio');startMusic()};
+const gameAudio=new GameAudio();
+function effect(id,position){const distance=position&&run?Math.hypot(position.x-run.x,position.z-run.z):0;gameAudio.effect(id,distance);}
+function startMusic(){gameAudio.startMusic();}
+$('sound').onclick=()=>{muted=!muted;gameAudio.setMuted(muted);$('sound').textContent=muted?'♪ SOUND OFF':'♪ SOUND ON';$('sound').setAttribute('aria-label',muted?'Unmute audio':'Mute audio');startMusic()};
+function inventoryRows(items){return items.length?mergeInventory([],items).map(item=>`<li><span style="color:${ITEMS[item.id].color}">◆</span><b>${ITEMS[item.id].name}</b><strong>×${item.quantity}</strong></li>`).join(''):'<li>No items collected yet.</li>';}
+function refreshStash(){const items=readInventory();$('stash').textContent=`STASH · ${items.reduce((n,i)=>n+i.quantity,0)}`;}
+$('stash').onclick=()=>{if(run?.phase==='playing')pause();$('overlay').hidden=false;$('modal').innerHTML=`<span class="eyebrow">SAVED COLLECTION</span><h2>Your stash.</h2><p>Collected items are saved in this browser for future stages.<br>Kundun boxes stay sealed for now.</p><ul class="loot-list">${inventoryRows(readInventory())}</ul><button class="primary" id="close-stash">BACK ↗</button>`;$('close-stash').onclick=()=>{if(run)modal();else $('overlay').hidden=true;};};
+refreshStash();
 $('fullscreen').onclick=()=>{if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen?.().catch(()=>{});};
 function cards(){
  $('cards').innerHTML=CLASSES.map((h,i)=>`<button class="hero-card ${h.id===selected?'selected':''}" style="--accent:${h.color}" data-hero="${h.id}" aria-pressed="${h.id===selected}"><div class="card-top"><span>${h.role}</span><span>${h.id===selected?'●':`0${i+1}`}</span></div><h3>${h.name}</h3><p>${h.description}</p><div class="card-skill"><span>${icons[h.id]}</span>${h.skill}</div></button>`).join('');
@@ -99,8 +104,8 @@ function cards(){
 }
 cards();
 const spellEffects=new SpellEffects(playGroup,heightAt);
-const enemies=new Map(),shots=new Map(),gems=new Map();let aura=null,protectionAura=null;
-function clearPlay(){appearanceKey='';spellEffects.clear();if(heroModel)disposeActor(heroModel);for(const enemy of enemies.values())disposeActor(enemy);for(const shot of shots.values())spellEffects.disposeProjectile(shot);for(const child of [...playGroup.children])playGroup.remove(child);enemies.clear();shots.clear();gems.clear();}
+const enemies=new Map(),shots=new Map(),gems=new Map(),lootModels=new Map();let aura=null,protectionAura=null;
+function clearPlay(){appearanceKey='';spellEffects.clear();if(heroModel)disposeActor(heroModel);for(const enemy of enemies.values())disposeActor(enemy);for(const shot of shots.values())spellEffects.disposeProjectile(shot);for(const child of [...playGroup.children])playGroup.remove(child);enemies.clear();shots.clear();gems.clear();for(const m of lootModels.values())disposeActor(m);lootModels.clear();}
 function start(){
  if(!ready)return;clearPlay();run=createRun(selected);run.obstacles=obstacles;run.x=10;for(let i=0;!positionClear(run.x,run.z,obstacles)&&i<60;i++){run.x=10+Math.cos(i*.8)*i*.2;run.z=Math.sin(i*.8)*i*.2;}heroModel=null;refreshAppearance();protectionAura=createAura(auraTexture,shinyTexture);playGroup.add(protectionAura);aura=ring(1.05,run.hero.color);aura.position.y=.05;playGroup.add(aura);menuGroup.visible=false;playGroup.visible=true;$('menu').hidden=true;$('hud').hidden=false;$('overlay').hidden=true;document.body.classList.add('playing');keys.clear();stick.x=stick.z=0;pointer.active=false;camera.position.set(0,22,20);camera.lookAt(0,0,0);$('hero-name').textContent=run.hero.name.toUpperCase();$('skill-name').textContent=run.hero.skill;$('skill-icon').textContent=icons[selected];skillButtons();startMusic();toast('The gates have fallen. Survive.');
 }
@@ -117,7 +122,7 @@ function modal(){
  }else if(s.phase==='paused'){
   $('modal').innerHTML='<span class="eyebrow">TAKE A BREATH</span><h2>The battle can wait.</h2><p>Move with WASD or arrows. Your skills attack automatically.<br>Collect blue jewels to grow stronger. Space or right click to dash.</p><div class="modal-actions"><button class="primary" id="resume">RESUME BATTLE</button><button class="secondary" id="leave">CHOOSE HERO</button></div>';$('resume').onclick=()=>{s.phase='playing';lastPhase='';modal()};$('leave').onclick=goMenu;
  }else{
-  const won=s.phase==='won';$('modal').innerHTML=`<span class="eyebrow">${won?'LORENCIA STANDS':'EVERY LEGEND BEGINS SOMEWHERE'}</span><h2>${won?'You held the line.':'The horde prevails.'}</h2><p>${won?'Five minutes. Ten waves. One hero. The sanctuary lives another day.':'Return stronger. A different blessing can change everything.'}</p><div class="results"><div><b>${time(s.time)}</b><span>SURVIVED</span></div><div><b>${s.kills}</b><span>ENEMIES SLAIN</span></div><div><b>${s.level}</b><span>HERO LEVEL</span></div></div><div class="modal-actions"><button class="primary" id="retry">PLAY AGAIN ↗</button><button class="secondary" id="leave">CHOOSE HERO</button></div>`;$('retry').onclick=start;$('leave').onclick=goMenu;
+  const won=s.phase==='won',saved=bankRun(s);refreshStash();$('modal').innerHTML=`<span class="eyebrow">${won?'LORENCIA STANDS':'EVERY LEGEND BEGINS SOMEWHERE'}</span><h2>${won?'You held the line.':'The horde prevails.'}</h2><p>${won?'Three minutes. Ten waves. One hero. The sanctuary lives another day.':'Return stronger. A different blessing can change everything.'}</p><div class="results"><div><b>${time(s.time)}</b><span>SURVIVED</span></div><div><b>${s.kills}</b><span>ENEMIES SLAIN</span></div><div><b>${s.level}</b><span>HERO LEVEL</span></div></div><div class="run-loot"><span class="eyebrow">COLLECTED · ${s.loot.collected.length} / 5</span><ul class="loot-list">${inventoryRows(s.loot.collected)}</ul><p>${saved.saved?'Saved to your stash for future stages.':'Browser storage unavailable; items could not be saved.'}</p></div><div class="modal-actions"><button class="primary" id="retry">PLAY AGAIN ↗</button><button class="secondary" id="leave">CHOOSE HERO</button></div>`;$('retry').onclick=start;$('leave').onclick=goMenu;
  }
  const first=$('modal').querySelector('button');first?.focus();
 }
@@ -140,26 +145,31 @@ function input(){
 }
 const gemGeo=new THREE.OctahedronGeometry(.18),gemMat=new THREE.MeshStandardMaterial({color:'#74bfdc',emissive:'#2a688e',emissiveIntensity:1.2,metalness:.5,roughness:.2});
 function renderRun(dt,t){
- const s=run;refreshAppearance();t=s.time;heroModel.position.set(s.x,heightAt(s.x,s.z),s.z);const clip=s.moving?(s.walking?'walk':'run'):'idle',clipData=assets[s.hero.id].data.clips[clip];const animationSeconds=s.moving?s.travel/(s.walking?2.9:3.8)*clipData.count/clipData.fps:t;setPose(heroModel,clip,animationSeconds,true,dt);if(s.attackAnimation>0)attackPose(heroModel,s.animationSkill===SKILLS[s.hero.id][1].id?'attack2':'attack',s.attackDuration-s.attackAnimation,s.attackDuration,s.moving,dt);const facing=s.attackAnimation>0?s.attackFacing:s.facing;const turn=Math.atan2(Math.sin(facing-heroModel.rotation.y),Math.cos(facing-heroModel.rotation.y));heroModel.rotation.y+=turn*(1-Math.exp(-dt*16));heroModel.userData.body.rotation.x=s.hitFlash>0?Math.sin(s.hitFlash*28)*.06:0;heroModel.visible=true;flashActor(heroModel,s.hitFlash/.32,'#ff6050');$('hit-vignette').style.opacity=String(s.hitFlash/.32*.75);protectionAura.position.copy(heroModel.position);updateAura(protectionAura,t,s.auraLevel);aura.position.set(s.x,heightAt(s.x,s.z)+.07,s.z);
+ const s=run;refreshAppearance();t=s.time;heroModel.position.set(s.x,heightAt(s.x,s.z),s.z);const clip=s.moving?(s.walking?'walk':'run'):'idle',clipData=assets[s.hero.id].data.clips[clip];const animationSeconds=s.moving?s.travel/(s.walking?2.9:3.8)*clipData.count/clipData.fps:t;setPose(heroModel,clip,animationSeconds,true,dt);if(s.attackAnimation>0)attackPose(heroModel,s.animationSkill===SKILLS[s.hero.id][1].id?'attack2':'attack',s.attackDuration-s.attackAnimation,s.attackDuration,s.moving,dt);const facing=s.attackAnimation>0?s.attackFacing:s.facing;const turn=Math.atan2(Math.sin(facing-heroModel.rotation.y),Math.cos(facing-heroModel.rotation.y));heroModel.rotation.y+=turn*(1-Math.exp(-dt*16));heroModel.userData.body.rotation.x=s.hitFlash>0?Math.sin(s.hitFlash*28)*.06:0;heroModel.visible=true;updateArmor(heroModel,t);flashActor(heroModel,s.hitFlash/.32,'#ff6050');$('hit-vignette').style.opacity=String(s.hitFlash/.32*.75);protectionAura.position.copy(heroModel.position);updateAura(protectionAura,t,s.auraLevel);aura.position.set(s.x,heightAt(s.x,s.z)+.07,s.z);
  const desired=new THREE.Vector3(s.x,20+heightAt(s.x,s.z),s.z+18);camera.position.lerp(desired,1-Math.exp(-dt*5));camera.lookAt(s.x,heightAt(s.x,s.z),s.z);
  sync(s.enemies,enemies,e=>{const m=model(e.id,e.size);addShadow(m,e.size*.45);prepareActor(m);playGroup.add(m);return m},(m,e)=>{
   m.position.set(e.x,heightAt(e.x,e.z),e.z);m.rotation.y=Math.atan2(s.x-e.x,s.z-e.z);m.traverse(child=>{if(child.isMesh&&child.morphTargetInfluences){const phase=(t*3+e.uid*.37)%4,frame=Math.floor(phase),f=phase-frame;child.morphTargetInfluences.fill(0);child.morphTargetInfluences[frame]=1-f;child.morphTargetInfluences[(frame+1)%4]=f;}});m.userData.body.rotation.z=Math.sin(e.hit*30)*.09;flashActor(m,Math.max(0,e.hit/.16));
  },m=>disposeActor(m));
  sync(s.shots,shots,p=>{const m=spellEffects.createProjectile(p);playGroup.add(m);return m},(m,p)=>spellEffects.moveProjectile(m,p,s.enemies.find(e=>e.uid===p.target)),m=>spellEffects.disposeProjectile(m));
+ sync(s.loot.drops,lootModels,drop=>{const m=model(ITEMS[drop.id].model,drop.id==='kundun-box'?.65:.4);prepareActor(m);playGroup.add(m);return m},(m,drop)=>{m.position.set(drop.x,heightAt(drop.x,drop.z)+.28+Math.sin(t*2+drop.uid)*.09,drop.z);m.rotation.y=t*.7;},m=>disposeActor(m));
  sync(s.gems,gems,g=>{const m=new THREE.Mesh(gemGeo,gemMat);playGroup.add(m);return m},(m,g)=>{m.position.set(g.x,heightAt(g.x,g.z)+.32+Math.sin(t*3+g.uid)*.06,g.z);m.rotation.y=t*1.5;});
- spellEffects.update(dt);$('orb-value').textContent=Math.ceil(s.hp);$('health-orb-fill').style.clipPath=`inset(${(1-s.hp/s.maxHp)*100}% 0 0 0)`;const activeSkill=SKILLS[s.hero.id].find(k=>k.id===s.skill);$('skill-name').textContent=activeSkill.name;$('health-fill').style.width=`${s.hp/s.maxHp*100}%`;$('health-text').textContent=`${Math.ceil(s.hp)} / ${s.maxHp}`;$('level').textContent=`LV. ${s.level}`;$('kills').textContent=`${s.kills} KILLS`;$('timer').textContent=time(s.time);$('xp-fill').style.width=`${s.xp/s.xpNeeded*100}%`;$('xp-text').textContent=`LEVEL ${s.level} · ${s.xp} / ${s.xpNeeded} EXP`;$('wave').textContent=`WAVE ${String(s.wave).padStart(2,'0')} / 10`;$('wave-fill').style.width=`${(s.time%30)/30*100}%`;$('dash-state').textContent=s.dashCooldown>0?`${s.dashCooldown.toFixed(1)}s`:'DASH';$('dash-button').style.setProperty('--ready',`${(1-s.dashCooldown/3)*100}%`);for(const button of document.querySelectorAll('[data-skill]')){const skill=SKILLS[s.hero.id].find(k=>k.id===button.dataset.skill);button.style.setProperty('--cooldown',button.dataset.skill===s.skill?`${Math.min(1,Math.max(0,s.attackTimer/(s.cooldown*skill.cooldown)))*100}%`:'0%');}
- const waveNames=['The first shadows','A restless clearing','Wings in the dark','The swarm grows','Steel meets fury','No way back','The hunt begins','A wall of darkness','Giants awaken','The final stand'];$('wave-title').textContent=s.time%30>=22?'Horde surge':waveNames[s.wave-1];$('wave').parentElement.classList.toggle('surging',s.time%30>=22);$('horde-count').textContent=`${s.enemies.length} ENEMIES IN THE ARENA`;$('gear-status').textContent=`${s.armorEquipped?ARMOR[s.hero.id].name:'Starter armor'}${s.enhancement?' +'+s.enhancement:''}${s.auraLevel?' · AURA '+s.auraLevel:''}`;
+ spellEffects.update(dt);$('orb-value').textContent=Math.ceil(s.hp);$('health-orb-fill').style.clipPath=`inset(${(1-s.hp/s.maxHp)*100}% 0 0 0)`;const activeSkill=SKILLS[s.hero.id].find(k=>k.id===s.skill);$('skill-name').textContent=activeSkill.name;$('health-fill').style.width=`${s.hp/s.maxHp*100}%`;$('health-text').textContent=`${Math.ceil(s.hp)} / ${s.maxHp}`;$('level').textContent=`LV. ${s.level}`;$('kills').textContent=`${s.kills} KILLS`;$('timer').textContent=time(s.time);$('xp-fill').style.width=`${s.xp/s.xpNeeded*100}%`;$('xp-text').textContent=`LEVEL ${s.level} · ${s.xp} / ${s.xpNeeded} EXP`;$('wave').textContent=`WAVE ${String(s.wave).padStart(2,'0')} / 10`;$('wave-fill').style.width=`${(s.time%WAVE_SECONDS)/WAVE_SECONDS*100}%`;$('dash-state').textContent=s.dashCooldown>0?`${s.dashCooldown.toFixed(1)}s`:'DASH';$('dash-button').style.setProperty('--ready',`${(1-s.dashCooldown/3)*100}%`);for(const button of document.querySelectorAll('[data-skill]')){const skill=SKILLS[s.hero.id].find(k=>k.id===button.dataset.skill);button.style.setProperty('--cooldown',button.dataset.skill===s.skill?`${Math.min(1,Math.max(0,s.attackTimer/(s.cooldown*skill.cooldown)))*100}%`:'0%');}
+ const waveNames=['The first shadows','A restless clearing','Wings in the dark','The swarm grows','Steel meets fury','No way back','The hunt begins','A wall of darkness','Giants awaken','The final stand'];$('wave-title').textContent=s.time%WAVE_SECONDS>=WAVE_SECONDS-SURGE_SECONDS?'Horde surge':waveNames[s.wave-1];$('wave').parentElement.classList.toggle('surging',s.time%WAVE_SECONDS>=WAVE_SECONDS-SURGE_SECONDS);$('horde-count').textContent=`${s.enemies.length} ENEMIES IN THE ARENA`;$('gear-status').textContent=`${s.armorEquipped?ARMOR[s.hero.id].name:STARTER_ARMOR[s.hero.id]}${s.enhancement?' +'+s.enhancement:''}${s.auraLevel?' · AURA '+s.auraLevel:''}`;
  if(lastWave!==s.wave){lastWave=s.wave;toast(`Wave ${s.wave} · ${waveNames[s.wave-1]}`)}
  const boss=s.enemies.find(e=>e.elite);$('boss-health').hidden=!boss;if(boss)$('boss-fill').style.width=`${Math.max(0,boss.hp/boss.maxHp*100)}%`;
- if(s.time>=DURATION&&!s.bossDefeated)$('objective').textContent='Finish the Lorencia Guardian';else $('objective').textContent='Survive 05:00 · defeat the guardian';
+ if(s.time>=DURATION&&!s.bossDefeated)$('objective').textContent='Finish the Lorencia Guardian';else $('objective').textContent='Survive 03:00 · defeat the guardian';
  if(lastPhase!==s.phase){lastPhase=s.phase;modal();}
 }
 function sync(items,map,create,update,dispose=null){const ids=new Set();for(const item of items){ids.add(item.uid);let object=map.get(item.uid);if(!object){object=create(item);map.set(item.uid,object)}update(object,item)}for(const [id,object]of map)if(!ids.has(id)){playGroup.remove(object);dispose?.(object);map.delete(id)}}
 function events(){let hitNumbers=0;for(const e of run.events){
  if(e.type==='attack'){const skill=SKILLS[run.hero.id].find(k=>k.id===e.skill);effect(skill.sound);spellEffects.attack(e.skill,e.x,e.z,e.facing,e.range);}
  else if(e.type==='impact')spellEffects.impact(e.skill,e.x,e.z);
- else if(e.type==='hit'){const actor=enemies.get(e.uid);if(actor)flashActor(actor,1);if(hitNumbers++<8)spellEffects.hit(e.x,e.z,e.size,e.damage);effect('hit');}
- else if(e.type==='death'){spellEffects.death(enemies.get(e.uid),e.x,e.z,e.size);effect('death-'+e.id);}
+ else if(e.type==='hit'){const actor=enemies.get(e.uid);if(actor)flashActor(actor,1);if(hitNumbers++<8)spellEffects.hit(e.x,e.z,e.size,e.damage,e.critical);effect('hit');}
+ else if(e.type==='death'){spellEffects.death(enemies.get(e.uid),e.x,e.z,e.size);effect(MONSTER_AUDIO[e.id].death,e);}
+ else if(e.type==='monster-idle')effect(MONSTER_AUDIO[e.id].idle,e);
+ else if(e.type==='monster-attack')effect(MONSTER_AUDIO[e.id].attack,e);
+ else if(e.type==='loot-drop')toast(ITEMS[e.id].name+' dropped · move close to collect');
+ else if(e.type==='loot-pickup'){effect('armor');toast(ITEMS[e.id].name+' collected');}
  else if(e.type==='hurt'){spellEffects.burst(run.x,run.z,'#ff7f80',12,.8);effect('hurt-'+run.hero.id);}
  else if(e.type==='level')effect('level-up');
  else if(e.type==='reward'){effect(e.id==='armor'||e.id.startsWith('enhance')?'armor':'level-up');toast(e.id==='armor'?ARMOR[run.hero.id].name+' equipped':e.id==='unlock-skill'?'New skill learned':e.id==='aura'?'Aura awakened':e.id==='enhance13'?'Armor enhanced to +13':e.id==='enhance15'?'Armor enhanced to +15':'Blessing acquired');}
@@ -172,12 +182,12 @@ function animate(ms){requestAnimationFrame(animate);const dt=Math.min((ms-last)/
   accumulator+=dt;while(accumulator>=1/60){tick(run,1/60,input());events();accumulator-=1/60;}
   renderRun(run.phase==='playing'?dt:0,t);
  }else{
-  lastPhase='';lastWave=1;accumulator=0;const previewX=heroPreviews[selected]?.position.x||0;camera.position.set(innerWidth<700?previewX:9.5,10,innerWidth<700?23:21);camera.lookAt(innerWidth<700?previewX:2.5,1.5,-3);
+  lastPhase='';lastWave=1;accumulator=0;const previewX=heroPreviews[selected]?.position.x||0;camera.position.set(innerWidth<700?previewX:9.5,10,innerWidth<700?23:25);camera.lookAt(innerWidth<700?previewX:4.5,.2,-3);
   for(const h of CLASSES){const m=heroPreviews[h.id];if(m){m.rotation.y=Math.sin(t*.35)*.14-.2;m.position.y=heightAt(m.position.x,m.position.z);setPose(m,'idle',t);m.scale.setScalar(h.id===selected?1:.9)}}
  }
  for(const prop of scenery)prop.visible=prop.position.distanceTo(camera.position)<67;renderer.render(scene,camera);
 }
-async function init(){try{[terrainData,objectData]=await Promise.all([fetch('assets/lorencia-terrain.json').then(r=>r.json()),fetch('assets/lorencia-objects.json').then(r=>r.json())]);await Promise.all(['knight','wizard','elf','knight-armor','wizard-armor','elf-armor','spider','budge','bull','hound','giant','weapon-sword','weapon-staff','weapon-bow',...objectData.models].map(loadModel));[chromeTexture,auraTexture,shinyTexture]=await Promise.all(['assets/textures/effect-chrome01.png','assets/textures/effect-aurawave_blue_00.png','assets/textures/effect-shiny01.png'].map(loadTexture));$('load-status').textContent='Building the clearing…';await world();ready=true;$('loading').hidden=true;$('begin').disabled=false;$('begin').innerHTML='ENTER LORENCIA <span>↗</span>';requestAnimationFrame(animate);}catch(error){console.error(error);$('load-status').textContent=`Could not load the demo: ${error.message}. Start it with npm start from App.`;}}
+async function init(){try{[terrainData,objectData]=await Promise.all([fetch('assets/lorencia-terrain.json').then(r=>r.json()),fetch('assets/lorencia-objects.json').then(r=>r.json())]);await Promise.all(['knight','wizard','elf','knight-armor','wizard-armor','elf-armor','spider','budge','bull','hound','giant','weapon-sword','weapon-staff','weapon-bow',...Object.values(ITEMS).map(item=>item.model),...objectData.models].map(loadModel));[chromeTexture,auraTexture,shinyTexture]=await Promise.all(['assets/textures/effect-chrome01.png','assets/textures/effect-aurawave_blue_00.png','assets/textures/effect-shiny01.png'].map(loadTexture));$('load-status').textContent='Building the clearing…';await world();ready=true;$('loading').hidden=true;$('begin').disabled=false;$('begin').innerHTML='ENTER LORENCIA <span>↗</span>';requestAnimationFrame(animate);}catch(error){console.error(error);$('load-status').textContent=`Could not load the demo: ${error.message}. Start it with npm start from App.`;}}
 init();
 // Small inspectable state for local QA; no accounts, services or persisted gameplay.
-window.muDemo={get run(){return run},get ready(){return ready},get renderer(){return renderer},get hero(){return heroModel},get obstacles(){return obstacles},get scenery(){return scenery},get effects(){return spellEffects},start,goMenu,select:id=>{if(CLASSES.some(c=>c.id===id)){selected=id;cards()}},pause};
+window.muDemo={get run(){return run},get ready(){return ready},get renderer(){return renderer},get hero(){return heroModel},get obstacles(){return obstacles},get scenery(){return scenery},get effects(){return spellEffects},get previews(){return heroPreviews},get camera(){return camera},start,goMenu,select:id=>{if(CLASSES.some(c=>c.id===id)){selected=id;cards()}},pause};

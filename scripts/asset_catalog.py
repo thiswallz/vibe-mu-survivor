@@ -12,7 +12,7 @@ def write_catalog(source,out):
  for key,(suffix,expected) in SETS.items():
   pieces=[]
   for part in ['Helm','Armor','Pant','Glove','Boot']:
-   model=part+suffix+'.bmd';match=next(((head,strings) for head,strings in records if model in strings and not any('[Bound]' in s for s in strings)),None)
+   model=('t_' if part=='Pant' and suffix=='Male19' else '')+part+suffix+'.bmd';match=next(((head,strings) for head,strings in records if model in strings and not any('[Bound]' in s for s in strings)),None)
    if not match:raise ValueError('Item table missing '+model)
    head,strings=match;name=strings[strings.index(model)+1]
    pieces.append({'name':name,'itemId':head[0],'category':head[1],'index':head[2],'sourceModel':'Player/'+model})

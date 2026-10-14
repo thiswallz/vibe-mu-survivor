@@ -50,11 +50,11 @@ export class SpellEffects{
   this.burst(x,z,palette[skill]||'#d0baff',skill==='evil'?10:7,.8);
  }
  burst(x,z,color,count,radius){const group=this.place(new THREE.Group(),x,z,.65),embers=[];for(let i=0;i<count;i++){const glow=sprite(color,.12+Math.random()*.16),a=Math.random()*Math.PI*2;group.add(glow);embers.push({glow,x:Math.sin(a)*radius,z:Math.cos(a)*radius,y:.3+Math.random()*1.4});}this.add(group,.55,t=>{for(const e of embers)e.glow.position.set(e.x*t,e.y*t-t*t,e.z*t);this.fade(group,1-t);});}
- hit(x,z,size,damage){
-  this.burst(x,z,'#fff0bf',4,.28);
-  const key=Math.round(damage);let texture=damageTextures.get(key);
-  if(!texture){const canvas=document.createElement('canvas');canvas.width=128;canvas.height=64;const ctx=canvas.getContext('2d');ctx.font='bold 36px Georgia';ctx.textAlign='center';ctx.lineWidth=5;ctx.strokeStyle='#35150a';ctx.strokeText(String(key),64,44);ctx.fillStyle='#ffdf8b';ctx.fillText(String(key),64,44);texture=new THREE.CanvasTexture(canvas);damageTextures.set(key,texture);}
-  const number=new THREE.Sprite(new THREE.SpriteMaterial({map:texture,transparent:true,depthTest:false,toneMapped:false}));number.scale.set(1.7,.85,1);this.place(number,x,z,size+.3);const base=number.position.y;
+ hit(x,z,size,damage,critical=false){
+  this.burst(x,z,critical?'#66edff':'#fff0bf',critical?9:4,critical?.5:.28);
+  const value=Math.round(damage),key=`${critical?'crit':'normal'}:${value}`;let texture=damageTextures.get(key);
+  if(!texture){const canvas=document.createElement('canvas');canvas.width=128;canvas.height=64;const ctx=canvas.getContext('2d');ctx.font='bold 36px Georgia';ctx.textAlign='center';ctx.lineWidth=5;ctx.strokeStyle='#35150a';ctx.strokeText(String(value),64,44);ctx.fillStyle=critical?'#65eaff':'#ffdf8b';ctx.fillText(String(value),64,44);texture=new THREE.CanvasTexture(canvas);damageTextures.set(key,texture);}
+  const number=new THREE.Sprite(new THREE.SpriteMaterial({map:texture,transparent:true,depthTest:false,toneMapped:false}));number.scale.set(critical?2.3:1.7,critical?1.15:.85,1);this.place(number,x,z,size+.3);const base=number.position.y;
   this.add(number,.65,t=>{number.position.y=base+t*1.4;number.material.opacity=1-t*t;});
  }
  death(body,x,z,size){

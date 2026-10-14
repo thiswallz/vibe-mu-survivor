@@ -52,3 +52,11 @@ test('reward armor sets retain original models, moving poses and chrome assets',
  for(const name of ['effect-chrome01.png','effect-shiny01.png','effect-aurawave_blue_00.png'])assert.ok(fs.existsSync(path.join(ui,'assets/textures',name)));
  for(const id of ['spider','budge','bull','hound','giant']){const bytes=fs.readFileSync(path.join(ui,'assets/audio','death-'+id+'.wav'));assert.equal(bytes.subarray(0,4).toString(),'RIFF');}
 });
+
+test('S20 catalog verifies set names, Grand Soul pants, and Bull Fighter model',()=>{
+ const catalog=JSON.parse(fs.readFileSync(path.join(ui,'assets/armor-catalog.json'))),manifest=JSON.parse(fs.readFileSync(path.join(ui,'assets/manifest.json')));
+ for(const [id,name]of [['knight','Dragon Set'],['wizard','Legendary Set'],['elf','Wind Set'],['knight-armor','Dark Phoenix Set'],['wizard-armor','Grand Soul Set'],['elf-armor','Guardian Set']])assert.equal(catalog[id].name,name);
+ assert.ok(manifest['wizard-armor'].source.includes('Player/t_PantMale19.bmd'));assert.deepEqual(manifest.bull.source,['Monster/Monster01.bmd']);
+ for(const id of ['spider','budge','bull','hound','giant'])for(const kind of ['idle','attack','death'])assert.ok(fs.statSync(path.join(ui,`assets/audio/${kind}-${id}.wav`)).size>100);
+ for(const id of ['kundun-box','jewel-bless','jewel-soul','jewel-life','jewel-chaos']){const model=JSON.parse(fs.readFileSync(path.join(ui,`assets/models/loot-${id}.json`)));for(const part of model.parts)assert.ok(fs.existsSync(path.join(ui,part.texture)));}
+});

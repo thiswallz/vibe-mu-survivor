@@ -11,10 +11,10 @@ test('dash has a cooldown and arena boundaries cannot be crossed',()=>{
  const s=createRun('elf');s.spawnTimer=100;s.x=ARENA-.1;tick(s,.1,{x:1,dash:true});assert.equal(s.x,ARENA);assert.ok(s.dashCooldown>0);const remaining=s.dashCooldown;tick(s,.1,{x:1,dash:true});assert.ok(s.dashCooldown<remaining);
 });
 test('wave progression unlocks enemies and the final guardian',()=>{
- const s=createRun('wizard',()=>.99);s.time=269.99;s.spawnTimer=0;tick(s,.02);assert.equal(s.wave,10);assert.equal(s.enemies[0].id,'giant');assert.equal(s.enemies.filter(e=>e.elite).length,1);tick(s,.02);assert.equal(s.enemies.filter(e=>e.elite).length,1);
+ const s=createRun('wizard',()=>.99);s.time=161.99;s.spawnTimer=0;tick(s,.02);assert.equal(s.wave,10);assert.equal(s.enemies[0].id,'giant');assert.equal(s.enemies.filter(e=>e.elite).length,1);tick(s,.02);assert.equal(s.enemies.filter(e=>e.elite).length,1);
 });
-test('survival requires both five minutes and defeating the guardian',()=>{
- const s=createRun('knight');s.time=300;s.bossSpawned=true;s.spawnTimer=100;tick(s,.01);assert.equal(s.phase,'playing');s.bossDefeated=true;tick(s,.01);assert.equal(s.phase,'won');
+test('survival requires both three minutes and defeating the guardian',()=>{
+ const s=createRun('knight');s.time=180;s.bossSpawned=true;s.spawnTimer=100;tick(s,.01);assert.equal(s.phase,'playing');s.bossDefeated=true;tick(s,.01);assert.equal(s.phase,'won');
 });
 test('death ends a run and pause freezes movement',()=>{
  const s=createRun('knight');s.phase='paused';tick(s,1,{x:1});assert.equal(s.x,0);s.phase='playing';s.hp=1;const e=spawnEnemy(s,4);e.x=e.z=0;tick(s,.01);assert.equal(s.phase,'dead');
@@ -56,7 +56,7 @@ test('armor, enhancement and aura rewards improve combat and protection',async()
 });
 test('wave finales spawn substantially larger packs and emit a surge cue',()=>{
  const regular=createRun('knight',()=>.5);regular.time=10;regular.spawnTimer=0;tick(regular,.01);
- const finale=createRun('knight',()=>.5);finale.time=22;finale.spawnTimer=0;tick(finale,.01);assert.ok(finale.enemies.length>=regular.enemies.length*3);assert.ok(finale.events.some(e=>e.type==='surge'));
+ const finale=createRun('knight',()=>.5);finale.time=13;finale.spawnTimer=0;tick(finale,.01);assert.ok(finale.enemies.length>=regular.enemies.length*3);assert.ok(finale.events.some(e=>e.type==='surge'));
 });
 test('hits and deaths carry monster identity for correct feedback and audio',()=>{
  const s=createRun('knight');s.spawnTimer=100;const e=spawnEnemy(s,0);e.x=1;e.z=0;tick(s,.01);const death=s.events.find(e=>e.type==='death');assert.equal(death.id,'spider');assert.equal(death.uid,e.uid);assert.ok(s.events.some(e=>e.type==='hit'&&e.damage>0));

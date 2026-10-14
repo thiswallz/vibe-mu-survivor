@@ -186,7 +186,7 @@ if __name__=='__main__':
   _,rig,rigActions=parse(decoded)
  playerRig=(rig,rigActions)
  for key,setname in [('knight','Male02'),('wizard','Male04'),('elf','Elf03'),('knight-armor','Male18'),('wizard-armor','Male19'),('elf-armor','Elf05')]:
-  convert(key,[player/f'{part}{setname}.bmd' for part in ['Helm','Armor','Pant','Glove','Boot']],playerRig=playerRig)
+  convert(key,[player/f"{'t_' if part=='Pant' and setname=='Male19' else ''}{part}{setname}.bmd" for part in ['Helm','Armor','Pant','Glove','Boot']],playerRig=playerRig)
  for key,num in [('spider',10),('budge',3),('bull',1),('hound',2),('giant',11)]:convert(key,[SOURCE/'Monster'/f'Monster{num:02}.bmd'],True)
  for key,name in [('tree','Tree01'),('rock','Stone01'),('statue','StoneStatue01'),('wall','StoneWall01'),('house','House01'),('house2','House02'),('fence','Fence01'),('bonfire','Bonfire01'),('streetlight','StreetLight01'),('well','Well01'),('ruin','StoneMuWall01'),('grass','Grass01')]:
   try:convert(key,[SOURCE/'Object1'/f'{name}.bmd'])
@@ -202,4 +202,6 @@ if __name__=='__main__':
  for source,dest in [('Sound/mSpider1.wav','death-spider.wav'),('Sound/mBudgeDie.wav','death-budge.wav'),('Sound/mBullDie.wav','death-bull.wav'),('Sound/mHoundDie.wav','death-hound.wav'),('Sound/mGiantDie.wav','death-giant.wav'),('Sound/pMaleScream1.wav','hurt-knight.wav'),('Sound/pMaleScream2.wav','hurt-wizard.wav'),('Sound/pFemaleScream1.wav','hurt-elf.wav'),('Sound/eMeleeHit1.wav','hit.wav'),('Sound/pDropItem.wav','armor.wav'),('Sound/sEvil.wav','evil.wav'),('Sound/sHellFire.wav','hellfire.wav'),('Sound/eIceArrow.wav','ice.wav'),('Sound/SwordInertiaAttack.wav','stab.wav'),('Music/Pub.mp3','lorencia-pub.mp3'),('Sound/eSwingLightSword.wav','knight.wav'),('Sound/sMagic.wav','wizard.wav'),('Sound/Magic_Arrow_Cast_01.wav','elf.wav'),('Sound/pLevelUp.wav','level-up.wav')]:shutil.copy2(SOURCE/source,OUT/'audio'/dest)
  convert_world_objects()
  convert_terrain()
+ from asset_catalog import write_catalog
+ write_catalog(SOURCE,OUT)
  (OUT/'manifest.json').write_text(json.dumps(manifest,indent=2))

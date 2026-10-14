@@ -24,3 +24,7 @@ flowchart LR
 ```
 
 One container can host both roles. In split mode, SERVE_UI=false disables static delivery on the API; INTERNAL_API_URL on the UI proxies same-origin API requests to the private server. No private address reaches browser code. Both roles use one Docker image. /healthz checks the local service; /api/health on the UI verifies the upstream connection. See DEPLOYMENT.md for runtime variables and Railway setup.
+
+## Extendable game modules
+
+The shared game package contains simulation in index.js and item/drop/collection rules in loot.js. UI modules cover appearance, spell feedback, monster audio, and inventory persistence separately. Build copies every shared module. New stages can supply their own loot rules and arenas; a future account inventory backend can replace the localStorage adapter without changing drop logic. The end screen banks each run once and uses a versioned storage format. Three-minute stages retain ten waves, five-second finale surges and a final-wave Guardian.
