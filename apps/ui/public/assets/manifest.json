@@ -1,0 +1,174 @@
+{
+  "knight": {
+    "source": [
+      "Player/HelmMale02.bmd",
+      "Player/ArmorMale02.bmd",
+      "Player/PantMale02.bmd",
+      "Player/GloveMale02.bmd",
+      "Player/BootMale02.bmd"
+    ],
+    "file": "assets/models/knight.json",
+    "triangles": 874,
+    "height": 1.9686800000000002
+  },
+  "wizard": {
+    "source": [
+      "Player/HelmMale04.bmd",
+      "Player/ArmorMale04.bmd",
+      "Player/PantMale04.bmd",
+      "Player/GloveMale04.bmd",
+      "Player/BootMale04.bmd"
+    ],
+    "file": "assets/models/wizard.json",
+    "triangles": 682,
+    "height": 1.9776799999999999
+  },
+  "elf": {
+    "source": [
+      "Player/HelmElf03.bmd",
+      "Player/ArmorElf03.bmd",
+      "Player/PantElf03.bmd",
+      "Player/GloveElf03.bmd",
+      "Player/BootElf03.bmd"
+    ],
+    "file": "assets/models/elf.json",
+    "triangles": 680,
+    "height": 1.92656
+  },
+  "spider": {
+    "source": [
+      "Monster/Monster10.bmd"
+    ],
+    "file": "assets/models/spider.json",
+    "triangles": 168,
+    "height": 1.26941
+  },
+  "budge": {
+    "source": [
+      "Monster/Monster03.bmd"
+    ],
+    "file": "assets/models/budge.json",
+    "triangles": 332,
+    "height": 1.7085599999999999
+  },
+  "bull": {
+    "source": [
+      "Monster/Monster04.bmd"
+    ],
+    "file": "assets/models/bull.json",
+    "triangles": 788,
+    "height": 2.05489
+  },
+  "hound": {
+    "source": [
+      "Monster/Monster02.bmd"
+    ],
+    "file": "assets/models/hound.json",
+    "triangles": 638,
+    "height": 2.34714
+  },
+  "giant": {
+    "source": [
+      "Monster/Monster11.bmd"
+    ],
+    "file": "assets/models/giant.json",
+    "triangles": 738,
+    "height": 2.3680000000000003
+  },
+  "tree": {
+    "source": [
+      "Object1/Tree01.bmd"
+    ],
+    "file": "assets/models/tree.json",
+    "triangles": 412,
+    "height": 8.24969
+  },
+  "rock": {
+    "source": [
+      "Object1/Stone01.bmd"
+    ],
+    "file": "assets/models/rock.json",
+    "triangles": 166,
+    "height": 2.04922
+  },
+  "statue": {
+    "source": [
+      "Object1/StoneStatue01.bmd"
+    ],
+    "file": "assets/models/statue.json",
+    "triangles": 92,
+    "height": 3.99987
+  },
+  "wall": {
+    "source": [
+      "Object1/StoneWall01.bmd"
+    ],
+    "file": "assets/models/wall.json",
+    "triangles": 318,
+    "height": 6.22792
+  },
+  "house": {
+    "source": [
+      "Object1/House01.bmd"
+    ],
+    "file": "assets/models/house.json",
+    "triangles": 176,
+    "height": 3.1522
+  },
+  "house2": {
+    "source": [
+      "Object1/House02.bmd"
+    ],
+    "file": "assets/models/house2.json",
+    "triangles": 173,
+    "height": 1.88713
+  },
+  "fence": {
+    "source": [
+      "Object1/Fence01.bmd"
+    ],
+    "file": "assets/models/fence.json",
+    "triangles": 36,
+    "height": 1.01166
+  },
+  "bonfire": {
+    "source": [
+      "Object1/Bonfire01.bmd"
+    ],
+    "file": "assets/models/bonfire.json",
+    "triangles": 110,
+    "height": 0.62899
+  },
+  "streetlight": {
+    "source": [
+      "Object1/StreetLight01.bmd"
+    ],
+    "file": "assets/models/streetlight.json",
+    "triangles": 84,
+    "height": 2.57978
+  },
+  "well": {
+    "source": [
+      "Object1/Well01.bmd"
+    ],
+    "file": "assets/models/well.json",
+    "triangles": 405,
+    "height": 2.70887
+  },
+  "ruin": {
+    "source": [
+      "Object1/StoneMuWall01.bmd"
+    ],
+    "file": "assets/models/ruin.json",
+    "triangles": 318,
+    "height": 6.23574
+  },
+  "grass": {
+    "source": [
+      "Object1/Grass01.bmd"
+    ],
+    "file": "assets/models/grass.json",
+    "triangles": 120,
+    "height": 0.28923
+  }
+}
