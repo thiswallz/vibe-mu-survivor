@@ -1030,5 +1030,29 @@
     "file": "assets/models/loot-elf-boots.json",
     "triangles": 152,
     "height": 0.6446299999999999
+  },
+  "loot-knight-weapon": {
+    "source": [
+      "Item/Sword16.bmd"
+    ],
+    "file": "assets/models/loot-knight-weapon.json",
+    "triangles": 24,
+    "height": 0.17125
+  },
+  "loot-wizard-weapon": {
+    "source": [
+      "Item/Staff12.bmd"
+    ],
+    "file": "assets/models/loot-wizard-weapon.json",
+    "triangles": 893,
+    "height": 0.7524
+  },
+  "loot-elf-weapon": {
+    "source": [
+      "Item/Bow06.bmd"
+    ],
+    "file": "assets/models/loot-elf-weapon.json",
+    "triangles": 106,
+    "height": 0.92708
   }
 }

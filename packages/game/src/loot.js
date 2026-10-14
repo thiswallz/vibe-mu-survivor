@@ -1,7 +1,7 @@
 import {ARMOR_ITEMS,itemKey,validEnhancement} from './equipment.js';
 export const LOOT_LIMIT=5;
 export const ITEMS=Object.freeze({
- 'kundun-box':{id:'kundun-box',name:'Box of Kundun +1',model:'loot-kundun-box',color:'#ffd378',kind:'box',description:'Open for an armor piece for the selected hero.'},
+ 'kundun-box':{id:'kundun-box',name:'Box of Kundun +1',model:'loot-kundun-box',color:'#ffd378',kind:'box',description:'Open for an equipment piece for the selected hero.'},
  'jewel-bless':{id:'jewel-bless',name:'Jewel of Bless',model:'loot-jewel-bless',color:'#ffbc68',kind:'jewel'},
  'jewel-soul':{id:'jewel-soul',name:'Jewel of Soul',model:'loot-jewel-soul',color:'#d8a6ff',kind:'jewel'},
  'jewel-life':{id:'jewel-life',name:'Jewel of Life',model:'loot-jewel-life',color:'#ffacda',kind:'jewel'},
