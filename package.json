@@ -3,7 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "workspaces": ["apps/*", "packages/*"],
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "description": "Local MU Survivor WebGL proof of concept",
   "scripts": {
     "start": "node scripts/start.mjs",
@@ -11,5 +14,11 @@
     "build": "node apps/ui/build.mjs",
     "serve": "node apps/server/src/index.mjs --production",
     "test": "node --test tests/*.test.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.2",
+    "@types/three": "0.180.0",
+    "typescript": "7.0.2",
+    "vite": "8.3.4"
   }
 }

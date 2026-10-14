@@ -1,0 +1,30 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "noEmit": true,
+    "declaration": false,
+    "types": [
+      "vite/client"
+    ],
+    "paths": {
+      "@mu-survivor/models": [
+        "../../packages/models/src/index.ts"
+      ],
+      "@mu-survivor/game": [
+        "../../packages/game/src/index.ts"
+      ],
+      "@mu-survivor/game/*": [
+        "../../packages/game/src/*.ts"
+      ],
+      "@mu-survivor/sdk": [
+        "../../packages/sdk/src/index.ts"
+      ]
+    }
+  },
+  "include": [
+    "src/**/*.ts",
+    "vite.config.ts"
+  ]
+}

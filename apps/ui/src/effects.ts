@@ -1,4 +1,4 @@
-import * as THREE from './vendor/three.module.js';
+import * as THREE from 'three';
 
 // Lightweight, animated spell geometry. Shared shapes/textures; bounded transient objects.
 const glowCanvas=document.createElement('canvas');glowCanvas.width=glowCanvas.height=64;

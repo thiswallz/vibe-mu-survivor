@@ -1,13 +1,13 @@
 import {createInventoryPanel} from './inventory-panel.js';
-import {SLOTS,itemKey,equipItem,unequipSlot,autoEquip,applyEquipment,chooseDropSlots} from './shared/equipment.js';
+import {SLOTS,itemKey,equipItem,unequipSlot,autoEquip,applyEquipment,chooseDropSlots} from '@mu-survivor/game/equipment';
 import {GameAudio,MONSTER_AUDIO} from './audio.js';
-import {ITEMS,mergeInventory,openKundun} from './shared/loot.js';
+import {ITEMS,mergeInventory,openKundun} from '@mu-survivor/game/loot';
 import {readInventory,readProfile,saveProfile,saveRunInventory,bankRun} from './inventory.js';
 import {prepareActor,disposeActor,flashActor,enhanceArmor,updateArmor,createAura,updateAura} from './appearance.js';
 import {SpellEffects} from './effects.js';
 import {keepArenaProp,solidArenaProp} from './scene-layout.js';
-import * as THREE from './vendor/three.module.js';
-import {CLASSES,ENEMIES,SKILLS,UPGRADES,ARMOR,STARTER_ARMOR,WAVE_SECONDS,SURGE_SECONDS,upgradeDefinition,createRun,tick,chooseUpgrade,setSkill,positionClear,DURATION,ARENA} from './shared/game.js';
+import * as THREE from 'three';
+import {CLASSES,ENEMIES,SKILLS,UPGRADES,ARMOR,STARTER_ARMOR,WAVE_SECONDS,SURGE_SECONDS,upgradeDefinition,createRun,tick,chooseUpgrade,setSkill,positionClear,DURATION,ARENA} from '@mu-survivor/game';
 const $=id=>document.getElementById(id);
 const icons={knight:'⚔',wizard:'✦',elf:'➶'};
 let selected='knight',run=null,ready=false,muted=false,last=0,accumulator=0,toastTimer=0,dashRequested=false;

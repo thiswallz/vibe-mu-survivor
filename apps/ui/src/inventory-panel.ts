@@ -1,5 +1,5 @@
-import {ITEMS} from './shared/loot.js';
-import {SLOTS,SLOT_LABELS,itemKey} from './shared/equipment.js';
+import {ITEMS} from '@mu-survivor/game/loot';
+import {SLOTS,SLOT_LABELS,itemKey} from '@mu-survivor/game/equipment';
 const placeholders={helm:'cap',armor:'upper',pants:'lower',gloves:'gloves',boots:'boots',weapon:'weapon(r)'};
 const title=item=>ITEMS[item.id].name+(item.enhancement?' +'+item.enhancement:'');
 export function createInventoryPanel({context,icon,equip,unequip,openBox,close}){

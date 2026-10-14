@@ -1,1 +1,27 @@
-{"name":"@mu-survivor/game","version":"0.1.0","private":true,"type":"module","exports":"./src/index.js"}
+{
+  "name": "@mu-survivor/game",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./loot": {
+      "types": "./dist/loot.d.ts",
+      "default": "./dist/loot.js"
+    },
+    "./equipment": {
+      "types": "./dist/equipment.d.ts",
+      "default": "./dist/equipment.js"
+    },
+    "./inventory": {
+      "types": "./dist/inventory.d.ts",
+      "default": "./dist/inventory.js"
+    }
+  },
+  "dependencies": {
+    "@mu-survivor/models": "0.1.0"
+  }
+}

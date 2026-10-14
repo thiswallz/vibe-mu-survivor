@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-import {configuration,createServer} from './http-server.mjs';
+import {configuration,createServer} from './http-server.js';
 if(fs.existsSync('.env'))process.loadEnvFile('.env');
 try{
  const config=configuration();

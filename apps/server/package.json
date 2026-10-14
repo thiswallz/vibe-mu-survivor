@@ -1,1 +1,13 @@
-{"name":"@mu-survivor/server","version":"0.1.0","private":true,"type":"module","scripts":{"dev":"node src/index.mjs","start":"node src/index.mjs --production"}}
+{
+  "name": "@mu-survivor/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch dist/index.js",
+    "start": "node dist/index.js --production"
+  },
+  "dependencies": {
+    "@mu-survivor/models": "0.1.0"
+  }
+}

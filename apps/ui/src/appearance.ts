@@ -1,4 +1,4 @@
-import * as THREE from './vendor/three.module.js';
+import * as THREE from 'three';
 export function prepareActor(root){
  root.traverse(mesh=>{if(mesh.isMesh){mesh.material=mesh.material.clone();mesh.userData.baseEmissive=mesh.material.emissive?.clone();mesh.userData.baseIntensity=mesh.material.emissiveIntensity||0;}});
 }
