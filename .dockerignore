@@ -1,0 +1,14 @@
+.git
+**/node_modules
+**/dist
+**/__pycache__
+**/*.pyc
+.env
+.env.*
+!.env.example
+artifacts
+.DS_Store
+scripts
+README.md
+ARCHITECTURE.md
+DEPLOYMENT.md

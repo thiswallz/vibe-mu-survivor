@@ -4,7 +4,7 @@ A single-player WebGL survival game built from the supplied MU client assets. No
 
 ## Run
 
-Use Node.js 20 or newer. From this folder:
+Use Node.js 20.12 or newer. From this folder:
 
 ```sh
 npm start
@@ -19,6 +19,10 @@ npm run dev
 ```
 
 Refresh the browser after editing. Use `PORT=5174 npm start` to choose another port.
+
+## Deployment
+
+Docker, Railway, a configurable private API connection, and environment examples are included. See [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ## Play
 
@@ -56,7 +60,7 @@ App/
 
 **Shared game package:** Character/enemy definitions, movement, waves, attacks, pickups, upgrades and run outcomes. It has no DOM, Three.js, or server dependencies, so it can be tested directly and reused by a future server.
 
-**Server:** Serves the UI and all assets from loopback only. `GET /api/health` provides readiness; `GET /api/demo` exposes basic demo metadata. Gameplay runs in the browser for this PoC; there is no authoritative multiplayer simulation. During development, the server exposes the shared game source at `/shared/game.js`; builds copy it into the UI output.
+**Server:** Serves the UI and all assets from localhost by default; HOST and PORT configure deployment binding. It can also proxy /api to a private API service via INTERNAL_API_URL. `GET /api/health` provides readiness; `GET /api/demo` exposes basic demo metadata. Gameplay runs in the browser for this PoC; there is no authoritative multiplayer simulation. During development, the server exposes the shared game source at `/shared/game.js`; builds copy it into the UI output.
 
 **Commands:** `npm start` builds and runs both parts; `npm run dev` serves sources; `npm run build` builds only the UI; `npm run serve` serves an existing build; `npm test` runs the simulation checks.
 
