@@ -15,7 +15,7 @@ const server=http.createServer((req,res)=>{
   res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'}).end(JSON.stringify({ok:true,game:'MU Survivor',mode:production?'production':'development'}));return;
  }
  if(requested==='/api/demo'){
-  res.writeHead(200,{'Content-Type':'application/json'}).end(JSON.stringify({stage:'Lorencia',durationSeconds:300,characters:3,enemyTypes:5,accounts:false}));return;
+  res.writeHead(200,{'Content-Type':'application/json'}).end(JSON.stringify({stage:'Lorencia',durationSeconds:300,characters:3,enemyTypes:5,skillsPerCharacter:2,accounts:false}));return;
  }
  const file=!production&&requested==='/shared/game.js'?path.join(app,'packages/game/src/index.js'):path.resolve(root,'.'+(requested==='/'?'/index.html':requested));
  if(!file.startsWith(root+path.sep)&&file!==path.join(app,'packages/game/src/index.js')){res.writeHead(403).end();return;}

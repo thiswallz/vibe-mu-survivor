@@ -19,3 +19,15 @@ test('survival requires both five minutes and defeating the guardian',()=>{
 test('death ends a run and pause freezes movement',()=>{
  const s=createRun('knight');s.phase='paused';tick(s,1,{x:1});assert.equal(s.x,0);s.phase='playing';s.hp=1;const e=spawnEnemy(s,4);e.x=e.z=0;tick(s,.01);assert.equal(s.phase,'dead');
 });
+
+test('each class can switch skills and both skills damage enemies',async()=>{
+ const {SKILLS,setSkill}=await import('../packages/game/src/index.js');
+ for(const hero of CLASSES)for(const skill of SKILLS[hero.id]){
+  const s=createRun(hero.id,()=>.5);s.spawnTimer=100;setSkill(s,skill.id);s.attackTimer=0;
+  const e=spawnEnemy(s,4);e.x=2;e.z=0;e.speed=0;const hp=e.hp;
+  for(let i=0;i<60;i++)tick(s,1/60);
+  assert.ok(e.hp<hp,`${hero.id} ${skill.id} should damage a target`);
+  if(skill.id==='icearrow')assert.ok(e.slow>0,'Ice Arrow should slow its target');
+  assert.equal(setSkill(s,'invalid'),false);
+ }
+});

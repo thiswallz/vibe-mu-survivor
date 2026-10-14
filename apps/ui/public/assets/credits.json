@@ -1,0 +1,30 @@
+{
+  "sourceClient": "Mu Eternals S20 1-2/Data",
+  "terrain": [
+    "World1/Terrain.map",
+    "World1/TerrainHeight.OZB"
+  ],
+  "objectPlacements": "World1/Terrain.obj",
+  "playerAnimations": "Player/player.bmd",
+  "models": "assets/manifest.json",
+  "interface": [
+    "Interface/newui_menu01.OZJ",
+    "Interface/newui_menu02.OZJ",
+    "Interface/newui_menu03.OZJ",
+    "Interface/newui_menu_red.OZJ",
+    "Interface/newui_Exbar.OZJ",
+    "Interface/newui_skill.OZJ",
+    "Interface/newui_skillbox.OZJ",
+    "Interface/newui_Party_HpBar.OZJ",
+    "Interface/newui_Party_Lifebar02.OZJ"
+  ],
+  "skills": [
+    "Skill/WaveForce.bmd",
+    "Skill/Arrow01.bmd",
+    "Skill/Ice01.bmd",
+    "Skill/Fire01.bmd",
+    "Skill/Inferno01.bmd",
+    "Skill/Bone01.bmd"
+  ],
+  "music": "Music/Pub.mp3"
+}

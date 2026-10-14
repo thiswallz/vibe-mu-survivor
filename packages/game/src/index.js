@@ -1,8 +1,14 @@
 export const CLASSES = [
  { id:'knight', name:'Dark Knight', title:'The blade of Lorencia', skill:'Twisting Slash', role:'MELEE · DURABLE', color:'#efb46c', hp:160, speed:6.4, damage:32, cooldown:0.8, range:3.8, description:'Stand your ground. A sweeping blade cuts through everything around you.' },
- { id:'wizard', name:'Dark Wizard', title:'Master of the arcane', skill:'Arcane Burst', role:'MAGIC · AREA DAMAGE', color:'#9bafff', hp:105, speed:6.1, damage:25, cooldown:0.75, range:17, description:'Unleash seeking magic. Explosive orbs turn gathering hordes into dust.' },
+ { id:'wizard', name:'Dark Wizard', title:'Master of the arcane', skill:'Evil Spirits', role:'MAGIC · AREA DAMAGE', color:'#9bafff', hp:105, speed:6.1, damage:25, cooldown:0.75, range:17, description:'Call the spirits. Seeking magic strikes the horde, or burn it with Hellfire.' },
  { id:'elf', name:'Fairy Elf', title:'The silent guardian', skill:'Multiple Shot', role:'RANGED · AGILE', color:'#7eddb8', hp:120, speed:7.2, damage:23, cooldown:0.62, range:20, description:'Keep your distance. Twin arrows seek out enemies while you slip away.' }
 ];
+export const SKILLS={
+ knight:[{id:'slash',name:'Twisting Slash',description:'Spin through nearby enemies.',icon:41,sound:'knight',range:3.8,cooldown:1,damage:1},{id:'stab',name:'Death Stab',description:'Pierce a line of enemies.',icon:43,sound:'stab',range:6,cooldown:1.5,damage:1.8}],
+ wizard:[{id:'evil',name:'Evil Spirits',description:'Seeking spirits attack three targets.',icon:9,sound:'evil',range:17,cooldown:1.2,damage:.85},{id:'hellfire',name:'Hellfire',description:'Burn every enemy around you.',icon:10,sound:'hellfire',range:6.5,cooldown:2.5,damage:2.2}],
+ elf:[{id:'multishot',name:'Multiple Shot',description:'Fire multiple seeking arrows.',icon:24,sound:'elf',range:20,cooldown:1,damage:1},{id:'icearrow',name:'Ice Arrow',description:'A powerful arrow slows its target.',icon:51,sound:'ice',range:20,cooldown:1.5,damage:1.8}]
+};
+export function setSkill(s,id){if(!['playing','paused'].includes(s.phase))return false;if(!SKILLS[s.hero.id].some(skill=>skill.id===id))return false;s.skill=id;s.attackTimer=Math.max(s.attackTimer,.15);return true;}
 export const ENEMIES = [
  { id:'spider', name:'Spider', hp:28, speed:2.6, damage:8, size:0.95, xp:3, color:'#a39967' },
  { id:'budge', name:'Budge Dragon', hp:45, speed:3.5, damage:10, size:1.25, xp:5, color:'#be9863' },
@@ -22,7 +28,7 @@ export const UPGRADES=[
 const dist=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
 export function createRun(id,random=Math.random){
  const hero=CLASSES.find(c=>c.id===id); if(!hero)throw new Error('Unknown class');
- return {hero,random,phase:'playing',time:0,wave:1,hp:hero.hp,maxHp:hero.hp,speed:hero.speed,damage:hero.damage,cooldown:hero.cooldown,slashRange:hero.range,projectiles:id==='elf'?2:1,magnet:3.1,x:0,z:0,facing:0,enemies:[],shots:[],gems:[],events:[],kills:0,level:1,xp:0,xpNeeded:12,spawnTimer:.8,attackTimer:0,dashCooldown:0,dashTime:0,invulnerable:0,bossSpawned:false,bossDefeated:false,nextId:1,choices:[],pendingLevels:0};
+ return {hero,random,skill:SKILLS[id][0].id,moving:false,walking:false,attackAnimation:0,phase:'playing',time:0,wave:1,hp:hero.hp,maxHp:hero.hp,speed:hero.speed,damage:hero.damage,cooldown:hero.cooldown,slashRange:hero.range,projectiles:id==='elf'?2:1,magnet:3.1,x:0,z:0,facing:0,enemies:[],shots:[],gems:[],events:[],kills:0,level:1,xp:0,xpNeeded:12,spawnTimer:.8,attackTimer:0,dashCooldown:0,dashTime:0,invulnerable:0,bossSpawned:false,bossDefeated:false,nextId:1,choices:[],pendingLevels:0};
 }
 function event(s,type,data={}){s.events.push({type,...data})}
 export function spawnEnemy(s,type,elite=false){
@@ -46,10 +52,10 @@ export function chooseUpgrade(s,id){
 }
 export function tick(s,dt,input={}){
  s.events=[];if(s.phase!=='playing')return;s.time+=dt;s.wave=Math.min(10,1+Math.floor(s.time/30));
- s.invulnerable=Math.max(0,s.invulnerable-dt);s.dashCooldown=Math.max(0,s.dashCooldown-dt);s.dashTime=Math.max(0,s.dashTime-dt);
+ s.attackAnimation=Math.max(0,s.attackAnimation-dt);s.invulnerable=Math.max(0,s.invulnerable-dt);s.dashCooldown=Math.max(0,s.dashCooldown-dt);s.dashTime=Math.max(0,s.dashTime-dt);
  let mx=input.x||0,mz=input.z||0,len=Math.hypot(mx,mz);if(len>1){mx/=len;mz/=len}
  if(input.dash&&s.dashCooldown===0&&len>0){s.dashTime=.2;s.dashCooldown=3;s.invulnerable=.35;event(s,'dash')}
- const speed=s.speed*(s.dashTime>0?3:1);s.x=Math.max(-ARENA,Math.min(ARENA,s.x+mx*speed*dt));s.z=Math.max(-ARENA,Math.min(ARENA,s.z+mz*speed*dt));if(len>.01)s.facing=Math.atan2(mx,mz);
+ s.moving=len>.01;s.walking=!!input.walk||len<.5;const speed=s.speed*(s.dashTime>0?3:s.walking?.65:1);s.x=Math.max(-ARENA,Math.min(ARENA,s.x+mx*speed*dt));s.z=Math.max(-ARENA,Math.min(ARENA,s.z+mz*speed*dt));if(len>.01)s.facing=Math.atan2(mx,mz);
  s.spawnTimer-=dt;
  if(s.spawnTimer<=0&&s.enemies.length<120){
   const unlocked=Math.min(5,1+Math.floor((s.wave-1)/2));spawnEnemy(s,Math.floor(s.random()*unlocked));s.spawnTimer=Math.max(.22,.95-s.wave*.073);
@@ -59,24 +65,35 @@ export function tick(s,dt,input={}){
  const living=s.enemies.filter(e=>e.hp>0);
  if(s.attackTimer<=0&&living.length){
   const nearest=[...living].sort((a,b)=>dist(a,s)-dist(b,s));
-  if(dist(nearest[0],s)<(s.hero.id==='knight'?s.slashRange:s.hero.range)){
-   s.attackTimer=s.cooldown;event(s,'attack',{hero:s.hero.id,x:s.x,z:s.z});
-   if(s.hero.id==='knight'){for(const e of living)if(dist(e,s)<s.slashRange+e.size*.2)hurt(s,e,s.damage);}
-   else for(let i=0;i<s.projectiles;i++){
-    const target=nearest[i%nearest.length];s.shots.push({uid:s.nextId++,x:s.x,z:s.z,target:target.uid,life:2.5,damage:s.damage,speed:s.hero.id==='elf'?24:16,kind:s.hero.id});
+  const skill=SKILLS[s.hero.id].find(k=>k.id===s.skill);const range=skill.id==='slash'?s.slashRange:skill.range;
+  if(dist(nearest[0],s)<range){
+   s.attackTimer=s.cooldown*skill.cooldown;s.attackAnimation=.45;s.animationSkill=skill.id;
+   if(!s.moving)s.facing=Math.atan2(nearest[0].x-s.x,nearest[0].z-s.z);
+   event(s,'attack',{hero:s.hero.id,skill:skill.id,x:s.x,z:s.z,facing:s.facing});
+   const damage=s.damage*skill.damage;
+   if(skill.id==='slash'||skill.id==='hellfire'){for(const e of living)if(dist(e,s)<range+e.size*.2)hurt(s,e,damage);}
+   else if(skill.id==='stab'){
+    const target=nearest[0],d=dist(target,s),dx=(target.x-s.x)/(d||1),dz=(target.z-s.z)/(d||1);
+    for(const e of living){const x=e.x-s.x,z=e.z-s.z,along=x*dx+z*dz,across=Math.abs(x*dz-z*dx);if(along>-.5&&along<range&&across<1.15+e.size*.2)hurt(s,e,damage);}
+   }else{
+    const count=skill.id==='evil'?s.projectiles+2:skill.id==='icearrow'?Math.max(1,s.projectiles-1):s.projectiles;
+    for(let i=0;i<count;i++){
+     const target=nearest[i%nearest.length];s.shots.push({uid:s.nextId++,x:s.x,z:s.z,target:target.uid,life:2.5,damage,speed:s.hero.id==='elf'?24:16,kind:s.hero.id,skill:skill.id});
+    }
    }
   }
  }
  for(const p of s.shots){
   p.life-=dt;const target=s.enemies.find(e=>e.uid===p.target&&e.hp>0);if(!target){p.life=0;continue}
   const d=dist(p,target);if(d<p.speed*dt+.45){
-   hurt(s,target,p.damage);if(p.kind==='wizard'){for(const e of s.enemies)if(e.uid!==target.uid&&dist(e,target)<2.5)hurt(s,e,p.damage*.65);event(s,'burst',{x:target.x,z:target.z})}p.life=0;
+   hurt(s,target,p.damage);if(p.skill==='icearrow'){target.slow=2.5;event(s,'ice',{x:target.x,z:target.z})}
+   if(p.kind==='wizard'){for(const e of s.enemies)if(e.uid!==target.uid&&dist(e,target)<2.5)hurt(s,e,p.damage*.65);event(s,'burst',{x:target.x,z:target.z})}p.life=0;
   }else{p.x+=(target.x-p.x)/d*p.speed*dt;p.z+=(target.z-p.z)/d*p.speed*dt}
  }
  s.shots=s.shots.filter(p=>p.life>0);
  for(const e of s.enemies){
-  if(e.hp<=0)continue;e.hit=Math.max(0,e.hit-dt);const d=dist(e,s);
-  if(d>.65){e.x+=(s.x-e.x)/d*e.speed*dt;e.z+=(s.z-e.z)/d*e.speed*dt;}
+  if(e.hp<=0)continue;e.slow=Math.max(0,(e.slow||0)-dt);e.hit=Math.max(0,e.hit-dt);const d=dist(e,s);
+  if(d>.65){e.x+=(s.x-e.x)/d*e.speed*(e.slow>0?.45:1)*dt;e.z+=(s.z-e.z)/d*e.speed*(e.slow>0?.45:1)*dt;}
   if(d<.6+e.size*.27&&s.invulnerable===0){s.hp=Math.max(0,s.hp-e.damage);s.invulnerable=.7;event(s,'hurt');}
  }
  s.enemies=s.enemies.filter(e=>e.hp>0);

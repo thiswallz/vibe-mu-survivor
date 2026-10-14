@@ -20,7 +20,12 @@ class Reader:
 
 def parse(path):
  data=path.read_bytes()
- if data[:4]!=b'BMD\x0a': raise ValueError('not plain BMD v10')
+ if data[:4]==b'BMD\x0f':
+  with tempfile.TemporaryDirectory() as temp:
+   decoded=Path(temp)/'plain.bmd'
+   subprocess.run([os.environ.get('MU_NODE','node'),str(ROOT/'scripts'/'decode-player.mjs'),str(path),str(decoded)],check=True)
+   data=decoded.read_bytes()
+ if data[:4]!=b'BMD\x0a': raise ValueError('unsupported BMD format')
  r=Reader(data); name=r.string(); nm,nb,na=r.read('3h'); meshes=[]
  for i in range(nm):
   nv,nn,nu,nt,tex=r.read('5h'); vv=[]
@@ -73,8 +78,8 @@ def convert(key,paths,animate=False,playerRig=None):
  parts=[];bounds=[]; clips={}; matsForClips=[]
  if playerRig:
   rig,rigActions=playerRig
-  indices={"knight":(4,17,26),"wizard":(10,23,32),"elf":(8,21,30)}[key]
-  for label,action,count in zip(["idle","walk","run"],indices,[4,8,8]):
+  indices={"knight":(4,17,26,65,71),"wizard":(10,23,32,72,73),"elf":(8,21,30,50,50)}[key]
+  for label,action,count in zip(["idle","walk","run","attack","attack2"],indices,[4,8,8,8,8]):
    clips[label]={"start":len(matsForClips),"count":count,"fps":count*(.7 if label=="idle" else 1.1 if label=="walk" else 1.65)}
    matsForClips.extend(matrices(rig,action,int(i*(rigActions[action]-1)/count)) for i in range(count))
  for path in paths:
@@ -98,7 +103,14 @@ def convert(key,paths,animate=False,playerRig=None):
     parts.append(part);bounds.extend(np.array(positions).reshape(-1,3).tolist())
  a=np.array(bounds);minimum=a.min(axis=0);maximum=a.max(axis=0)
  result={'parts':parts,'min':minimum.tolist(),'max':maximum.tolist()}
- if clips:result['clips']=clips
+ if clips:
+  result['clips']=clips;result['sockets']={}
+  axis=np.array([[1,0,0],[0,0,1],[0,-1,0]])
+  for label,node in [('right',33),('left',42)]:
+   result['sockets'][label]=[]
+   for mats in matsForClips:
+    m=mats[node];out=np.eye(4);out[:3,:3]=axis@m[:3,:3]@axis.T;out[:3,3]=axis@m[:3,3]/100
+    result['sockets'][label].append([round(float(v),6) for v in out.T.flatten()])
  dest=OUT/'models'/f'{key}.json';dest.write_text(json.dumps(result,separators=(',',':')))
  manifest[key]={'source':[str(p.relative_to(SOURCE)) for p in paths],'file':'assets/models/'+dest.name,'triangles':sum(len(p['positions'])//9 for p in parts),'height':float(maximum[1]-minimum[1])}
  print(key,len(parts),'parts',manifest[key]['triangles'],'triangles',manifest[key]['height'],'height')
@@ -110,7 +122,7 @@ def convert_terrain():
  names=['TileGrass01','TileGrass02','TileGround01','TileGround02','TileGround03','TileWater01','TileWood01','TileRock01','TileRock02','TileRock03']
  tiles=[]
  for name in names:
-  url=texture(folder,name+'.OZJ');tiles.append(Image.open(OUT.parent/url).convert('RGB'))
+  url=texture(folder,name+'.OZJ');tiles.append(Image.open(OUT.parent/url).convert('RGBA'))
  size=80;startX=90;startY=90;px=32;image=Image.new('RGB',(size*px,size*px))
  for y in range(size):
   for x in range(size):
@@ -118,9 +130,10 @@ def convert_terrain():
    def sample(index):
     im=tiles[index if index<len(tiles) else 0];sx=(tx*64)%im.width;sy=(ty*64)%im.height
     return im.crop((sx,sy,sx+64,sy+64)).resize((px,px))
-   base=sample(layers[0][i]);overlay=layers[1][i];alpha=layers[2][i]/255
-   if overlay<len(tiles) and alpha>0:base=Image.blend(base,sample(overlay),alpha)
-   image.paste(base,(x*px,y*px))
+   base=sample(0);base=Image.alpha_composite(base,sample(layers[0][i]));overlay=layers[1][i];alpha=layers[2][i]/255
+   if overlay<len(tiles) and alpha>0:
+    top=sample(overlay);top.putalpha(top.getchannel('A').point(lambda v:int(v*alpha)));base=Image.alpha_composite(base,top)
+   image.paste(base.convert('RGB'),(x*px,y*px))
  image.save(OUT/'textures'/'lorencia-terrain.jpg',quality=90)
  raw=(folder/'TerrainHeight.OZB').read_bytes()[-count:]
  heights=[]
@@ -128,6 +141,22 @@ def convert_terrain():
   for x in range(size+1):heights.append(round((raw[(startY+y)*256+startX+x]-110)*.015,4))
  (OUT/'lorencia-terrain.json').write_text(json.dumps({'size':size,'spacing':2,'heights':heights,'source':['World1/Terrain.map','World1/TerrainHeight.OZB'],'origin':[startX,startY]},separators=(',',':')))
  print('Lorencia terrain: original tile layers + height field, 80 × 80 tiles')
+
+def convert_world_objects():
+ mapping={}
+ for start,name,count in [(0,'Tree',13),(20,'Grass',8),(30,'Stone',5),(40,'StoneStatue',3),(44,'Tomb',3),(50,'FireLight',2),(56,'MerchantAnimal',2),(65,'SteelWall',3),(69,'StoneWall',6),(75,'StoneMuWall',4),(81,'Fence',4),(91,'Cannon',3),(96,'Sign',2),(98,'Carriage',4),(102,'Straw',2),(106,'Well',4),(115,'House',5),(121,'HouseWall',6),(127,'HouseEtc',3),(130,'Light',3),(140,'Furniture',7),(151,'Beer',3)]:
+  for n in range(count):mapping[start+n]=name+f'{n+1:02}'
+ mapping.update({43:'SteelStatue01',52:'Bonfire01',55:'DoungeonGate01',58:'TreasureDrum01',59:'TreasureChest01',60:'Ship01',68:'SteelDoor01',80:'Bridge01',85:'BridgeStone01',90:'StreetLight01',95:'Curtain01',105:'Waterspout01',110:'Hanging01',111:'Stair01',120:'Tent01',133:'PoseBox01',150:'Candle01'})
+ data=(SOURCE/'World1'/'Terrain.obj').read_bytes();n=struct.unpack_from('<h',data,1)[0];objects=[];converted=set()
+ for i in range(n):
+  kind,x,y,z,ax,ay,az,scale=struct.unpack_from('<h7f',data,3+i*30)
+  if not (90<=x/100<=170 and 90<=y/100<=170) or kind not in mapping:continue
+  key=f'lorencia-{kind}'
+  if key not in converted:
+   convert(key,[SOURCE/'Object1'/(mapping[kind]+'.bmd')]);converted.add(key)
+  objects.append({'model':key,'type':kind,'position':[(x/100-130)*2,z/100*2-3.3,-(y/100-130)*2],'rotation':[math.radians(ax),math.radians(az),-math.radians(ay)],'scale':scale*2})
+ (OUT/'lorencia-objects.json').write_text(json.dumps({'source':'World1/Terrain.obj','objects':objects,'models':sorted(converted)},separators=(',',':')))
+ print('Lorencia: '+str(len(objects))+' ORIGINAL object placements')
 
 if __name__=='__main__':
  for d in ['models','textures','audio']:(OUT/d).mkdir(parents=True,exist_ok=True)
@@ -145,6 +174,10 @@ if __name__=='__main__':
   try:convert(key,[SOURCE/'Object1'/f'{name}.bmd'])
   except ValueError as e: print('skip',name,e)
  for name in ['TileGrass01.OZJ','TileGrass02.OZJ','TileGround01.OZJ','TileGround02.OZJ','TileRock01.OZJ']:texture(SOURCE/'World1',name)
- for source,dest in [('Music/Pub.mp3','lorencia-pub.mp3'),('Sound/eSwingLightSword.wav','knight.wav'),('Sound/sMagic.wav','wizard.wav'),('Sound/Magic_Arrow_Cast_01.wav','elf.wav'),('Sound/pLevelUp.wav','level-up.wav')]:shutil.copy2(SOURCE/source,OUT/'audio'/dest)
+ for key,name in [('slash','WaveForce'),('arrow','Arrow01'),('ice','Ice01'),('fire','Fire01'),('inferno','Inferno01'),('spirit','Bone01')]:convert('skill-'+key,[SOURCE/'Skill'/(name+'.bmd')])
+ for key,name in [('sword','Sword02'),('staff','Staff01'),('bow','Bow01')]:convert('weapon-'+key,[SOURCE/'Item'/(name+'.bmd')])
+ for name in ['newui_menu01.OZJ','newui_menu02.OZJ','newui_menu03.OZJ','newui_menu_red.OZJ','newui_menu_blue.OZJ','newui_Exbar.OZJ','newui_skill.OZJ','newui_skillbox.OZJ','newui_Party_HpBar.OZJ','newui_Party_Lifebar01.OZJ','newui_Party_Lifebar02.OZJ']:texture(SOURCE/'Interface',name)
+ for source,dest in [('Sound/sEvil.wav','evil.wav'),('Sound/sHellFire.wav','hellfire.wav'),('Sound/eIceArrow.wav','ice.wav'),('Sound/SwordInertiaAttack.wav','stab.wav'),('Music/Pub.mp3','lorencia-pub.mp3'),('Sound/eSwingLightSword.wav','knight.wav'),('Sound/sMagic.wav','wizard.wav'),('Sound/Magic_Arrow_Cast_01.wav','elf.wav'),('Sound/pLevelUp.wav','level-up.wav')]:shutil.copy2(SOURCE/source,OUT/'audio'/dest)
+ convert_world_objects()
  convert_terrain()
  (OUT/'manifest.json').write_text(json.dumps(manifest,indent=2))
