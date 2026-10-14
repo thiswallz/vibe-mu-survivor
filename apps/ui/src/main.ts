@@ -795,7 +795,7 @@ addEventListener('keydown', (e) => {
     return;
   }
   if (inventoryPanel.visible) {
-    if (e.code === 'Escape') closeInventory();
+    if (e.code === 'Escape' && !inventoryPanel.dismissDetails()) closeInventory();
     return;
   }
   if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code))

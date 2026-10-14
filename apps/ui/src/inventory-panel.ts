@@ -80,6 +80,7 @@ export function createInventoryPanel({
     preview(item, details.querySelector<HTMLElement>('.item-preview')!);
   }
   function render() {
+    hideDetails();
     const s = context(),
       items = bagItems(s);
     let chosen = s.inventory.find((item) => itemKey(item) === selected);
@@ -113,7 +114,7 @@ export function createInventoryPanel({
       },
     ).join(
       '',
-    )}</div><div class="inventory-detail">${chosen ? `<b style="color:${def.color}">${title(chosen)}</b><p>${def.kind === 'equipment' ? (compatible ? `${SLOT_LABELS[def!.slot!]} · ${def.slot === 'weapon' ? 'Increases attack power' : 'Increases defense and maximum vitality'}${equipped ? ' · Equipped' : ''}` : `For ${{ knight: 'Dark Knight', wizard: 'Dark Wizard', elf: 'Fairy Elf' }[def!.hero!]}`) : def.kind === 'box' ? 'Open to receive an equipment piece for this hero.' : 'MU jewel · Kept for future upgrade crafting.'}</p>` : '<b>Your inventory is empty.</b><p>Monster drops go here. Empty slots equip matching pieces automatically.</p>'}</div><div class="inventory-actions">${chosen && def.kind === 'equipment' ? `<button id="inventory-equip" ${compatible ? '' : 'disabled'}>${equipped ? 'UNEQUIP' : 'EQUIP'}</button>` : chosen && def.kind === 'box' ? '<button id="inventory-open-box">OPEN BOX</button>' : ''}<span>Saved on this device · <kbd>I</kbd> close</span></div><div class="inventory-help">Select a piece above or in the bag to equip or remove it.</div></section>`;
+    )}</div><div class="inventory-detail">${chosen ? `<b style="color:${def.kind === 'equipment' ? itemColor(chosen) : def.color}">${title(chosen)}</b><p>${def.kind === 'equipment' ? (compatible ? `${SLOT_LABELS[def!.slot!]} · ${def.slot === 'weapon' ? 'Increases attack power' : 'Increases defense and maximum vitality'}${equipped ? ' · Equipped' : ''}` : `For ${{ knight: 'Dark Knight', wizard: 'Dark Wizard', elf: 'Fairy Elf' }[def!.hero!]}`) : def.kind === 'box' ? 'Open to receive an equipment piece for this hero.' : 'MU jewel · Kept for future upgrade crafting.'}</p>` : '<b>Your inventory is empty.</b><p>Monster drops go here. Empty slots equip matching pieces automatically.</p>'}</div><div class="inventory-actions">${chosen && def.kind === 'equipment' ? `<button id="inventory-equip" ${compatible ? '' : 'disabled'}>${equipped ? 'UNEQUIP' : 'EQUIP'}</button>` : chosen && def.kind === 'box' ? '<button id="inventory-open-box">OPEN BOX</button>' : ''}<span>Saved on this device · <kbd>I</kbd> close</span></div><div class="inventory-help">Select a piece above or in the bag to equip or remove it.</div></section>`;
     overlay.querySelector<HTMLButtonElement>('#inventory-close')!.onclick = close;
     for (const button of overlay.querySelectorAll<HTMLButtonElement>('[data-item]'))
       button.onclick = () => {
@@ -220,6 +221,11 @@ export function createInventoryPanel({
     hide() {
       hideDetails();
       overlay.hidden = true;
+    },
+    dismissDetails() {
+      if (details.hidden) return false;
+      hideDetails();
+      return true;
     },
     render,
   };
