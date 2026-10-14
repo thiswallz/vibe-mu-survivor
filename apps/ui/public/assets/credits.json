@@ -35,10 +35,36 @@
   ],
   "aura": "Effect/AuraWave_Blue_00.OZJ",
   "monsterAudio": [
-    "Sound/mSpider1.wav",
+    "Sound/mBudge1.wav",
+    "Sound/mBudgeAttack1.wav",
     "Sound/mBudgeDie.wav",
+    "Sound/mBull1.wav",
+    "Sound/mBullAttack1.wav",
     "Sound/mBullDie.wav",
+    "Sound/mGiant1.wav",
+    "Sound/mGiantAttack1.wav",
+    "Sound/mGiantDie.wav",
+    "Sound/mHound1.wav",
+    "Sound/mHoundAttack1.wav",
     "Sound/mHoundDie.wav",
-    "Sound/mGiantDie.wav"
+    "Sound/mSpider1.wav"
+  ],
+  "itemNames": "Local/item.bmd (assets/armor-catalog.json)",
+  "skinResolution": {
+    "knight": "Player/skin_barbarian_01.OZJ",
+    "wizard": "Player/skin_wizard_01.OZJ",
+    "elf": "Player/skin_archer_01.OZJ"
+  },
+  "unarmoredBodies": [
+    "Player/*Class01.bmd",
+    "Player/*Class02.bmd",
+    "Player/*Class03.bmd"
+  ],
+  "loot": [
+    "Item/MagicBox01.bmd",
+    "Item/Jewel01.bmd",
+    "Item/Jewel02.bmd",
+    "Item/Jewel03.bmd",
+    "Item/Jewel15.bmd"
   ]
 }

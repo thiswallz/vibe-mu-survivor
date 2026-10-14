@@ -1,6 +1,6 @@
 """Read the supplied S20 item table instead of guessing names from texture numbers."""
 import struct,re,json
-SETS={'knight':('Male02','Dragon'),'wizard':('Male04','Legendary'),'elf':('Elf03','Wind'),'knight-armor':('Male18','Dark Phoenix'),'wizard-armor':('Male19','Grand Soul'),'elf-armor':('Elf05','Guardian')}
+SETS={'knight-armor':('Male18','Dark Phoenix'),'wizard-armor':('Male19','Grand Soul'),'elf-armor':('Elf05','Guardian')}
 def write_catalog(source,out):
  raw=(source/'Local/item.bmd').read_bytes();count=struct.unpack_from('<I',raw)[0];size=(len(raw)-8)//count
  if size!=700:raise ValueError('Unsupported S20 item record layout')
@@ -19,4 +19,6 @@ def write_catalog(source,out):
   armor=next(p for p in pieces if p['category']==8)
   if not armor['name'].startswith(expected):raise ValueError('Unexpected armor name '+armor['name'])
   catalog[key]={'name':expected+' Set','source':'Local/item.bmd','pieces':pieces}
+ for key,suffix in [('knight','Class01'),('wizard','Class02'),('elf','Class03')]:
+  catalog[key]={'name':'Unarmored','source':'Player/'+suffix,'pieces':[{'name':part+' body','sourceModel':f'Player/{part}{suffix}.bmd'} for part in ['Helm','Armor','Pant','Glove','Boot']]}
  (out/'armor-catalog.json').write_text(json.dumps(catalog,indent=2))

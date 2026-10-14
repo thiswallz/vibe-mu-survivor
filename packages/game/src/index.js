@@ -18,7 +18,7 @@ export const ENEMIES = [
  { id:'giant', name:'Giant', hp:170, speed:1.7, damage:22, size:2.9, xp:15, color:'#a9a588' }
 ];
 export const DURATION=180, WAVE_SECONDS=18, SURGE_SECONDS=5, ARENA=29, MAX_ENEMIES=180;
-export const STARTER_ARMOR={knight:'Dragon Set',wizard:'Legendary Set',elf:'Wind Set'};
+export const STARTER_ARMOR={knight:'Unarmored',wizard:'Unarmored',elf:'Unarmored'};
 export const ARMOR={knight:{name:'Dark Phoenix Set',model:'knight-armor'},wizard:{name:'Grand Soul Set',model:'wizard-armor'},elf:{name:'Guardian Set',model:'elf-armor'}};
 export const UPGRADES=[
  {id:'critical',icon:'✧',name:'Critical precision',text:'Gain 8% critical chance. Critical hits deal 50% more damage.',apply:s=>s.criticalChance=Math.min(.44,s.criticalChance+.08)},
@@ -34,8 +34,8 @@ export function rewardOptions(s){
  if(s.level>=2&&!s.unlockedSkills.includes(SKILLS[s.hero.id][1].id))rewards.push({id:'unlock-skill',icon:'✦',name:'Learn '+SKILLS[s.hero.id][1].name,text:'Unlock a new skill and equip it. Switch with 1 / 2.',apply:s=>{s.unlockedSkills.push(SKILLS[s.hero.id][1].id);s.skill=SKILLS[s.hero.id][1].id;}});
  if(s.level>=3&&s.auraLevel<2)rewards.push({id:'aura',icon:'◉',name:s.auraLevel?'Greater aura':'Aura of protection',text:'Orbiting energy damages nearby enemies and protects you.',apply:s=>{s.auraLevel++;}});
  if(s.level>=4&&!s.armorEquipped)rewards.push({id:'armor',icon:'♜',name:ARMOR[s.hero.id].name,text:'Equip a new MU armor set. +35 health, 18% damage reduction.',apply:s=>{s.armorEquipped=true;s.maxHp+=35;s.hp=Math.min(s.maxHp,s.hp+35);}});
- if(s.level>=5&&s.enhancement<13)rewards.push({id:'enhance13',icon:'✧',name:'Armor +13',text:'Golden chrome armor shine. +15% power and extra protection.',apply:s=>{s.enhancement=13;s.damage*=1.15;}});
- if(s.level>=8&&s.enhancement===13)rewards.push({id:'enhance15',icon:'✧',name:'Armor +15',text:'Brilliant armor shine. +20% power and stronger protection.',apply:s=>{s.enhancement=15;s.damage*=1.2;}});
+ if(s.armorEquipped&&s.level>=5&&s.enhancement<13)rewards.push({id:'enhance13',icon:'✧',name:'Armor +13',text:'Golden chrome armor shine. +15% power and extra protection.',apply:s=>{s.enhancement=13;s.damage*=1.15;}});
+ if(s.armorEquipped&&s.level>=8&&s.enhancement===13)rewards.push({id:'enhance15',icon:'✧',name:'Armor +15',text:'Brilliant armor shine. +20% power and stronger protection.',apply:s=>{s.enhancement=15;s.damage*=1.2;}});
  return rewards;
 }
 export function upgradeDefinition(s,id){return [...UPGRADES,...rewardOptions(s)].find(u=>u.id===id);}

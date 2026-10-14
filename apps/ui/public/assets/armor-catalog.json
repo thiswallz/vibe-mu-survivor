@@ -1,127 +1,4 @@
 {
-  "knight": {
-    "name": "Dragon Set",
-    "source": "Local/item.bmd",
-    "pieces": [
-      {
-        "name": "Dragon Helm",
-        "itemId": 3585,
-        "category": 7,
-        "index": 1,
-        "sourceModel": "Player/HelmMale02.bmd"
-      },
-      {
-        "name": "Dragon Armor",
-        "itemId": 4097,
-        "category": 8,
-        "index": 1,
-        "sourceModel": "Player/ArmorMale02.bmd"
-      },
-      {
-        "name": "Dragon Pants",
-        "itemId": 4609,
-        "category": 9,
-        "index": 1,
-        "sourceModel": "Player/PantMale02.bmd"
-      },
-      {
-        "name": "Dragon Gloves",
-        "itemId": 5121,
-        "category": 10,
-        "index": 1,
-        "sourceModel": "Player/GloveMale02.bmd"
-      },
-      {
-        "name": "Dragon Boots",
-        "itemId": 5633,
-        "category": 11,
-        "index": 1,
-        "sourceModel": "Player/BootMale02.bmd"
-      }
-    ]
-  },
-  "wizard": {
-    "name": "Legendary Set",
-    "source": "Local/item.bmd",
-    "pieces": [
-      {
-        "name": "Legendary Helm",
-        "itemId": 3587,
-        "category": 7,
-        "index": 3,
-        "sourceModel": "Player/HelmMale04.bmd"
-      },
-      {
-        "name": "Legendary Armor",
-        "itemId": 4099,
-        "category": 8,
-        "index": 3,
-        "sourceModel": "Player/ArmorMale04.bmd"
-      },
-      {
-        "name": "Legendary Pants",
-        "itemId": 4611,
-        "category": 9,
-        "index": 3,
-        "sourceModel": "Player/PantMale04.bmd"
-      },
-      {
-        "name": "Legendary Gloves",
-        "itemId": 5123,
-        "category": 10,
-        "index": 3,
-        "sourceModel": "Player/GloveMale04.bmd"
-      },
-      {
-        "name": "Legendary Boots",
-        "itemId": 5635,
-        "category": 11,
-        "index": 3,
-        "sourceModel": "Player/BootMale04.bmd"
-      }
-    ]
-  },
-  "elf": {
-    "name": "Wind Set",
-    "source": "Local/item.bmd",
-    "pieces": [
-      {
-        "name": "Wind Helm",
-        "itemId": 3596,
-        "category": 7,
-        "index": 12,
-        "sourceModel": "Player/HelmElf03.bmd"
-      },
-      {
-        "name": "Wind Armor",
-        "itemId": 4108,
-        "category": 8,
-        "index": 12,
-        "sourceModel": "Player/ArmorElf03.bmd"
-      },
-      {
-        "name": "Wind Pants",
-        "itemId": 4620,
-        "category": 9,
-        "index": 12,
-        "sourceModel": "Player/PantElf03.bmd"
-      },
-      {
-        "name": "Wind Gloves",
-        "itemId": 5132,
-        "category": 10,
-        "index": 12,
-        "sourceModel": "Player/GloveElf03.bmd"
-      },
-      {
-        "name": "Wind Boots",
-        "itemId": 5644,
-        "category": 11,
-        "index": 12,
-        "sourceModel": "Player/BootElf03.bmd"
-      }
-    ]
-  },
   "knight-armor": {
     "name": "Dark Phoenix Set",
     "source": "Local/item.bmd",
@@ -242,6 +119,84 @@
         "category": 11,
         "index": 14,
         "sourceModel": "Player/BootElf05.bmd"
+      }
+    ]
+  },
+  "knight": {
+    "name": "Unarmored",
+    "source": "Player/Class01",
+    "pieces": [
+      {
+        "name": "Helm body",
+        "sourceModel": "Player/HelmClass01.bmd"
+      },
+      {
+        "name": "Armor body",
+        "sourceModel": "Player/ArmorClass01.bmd"
+      },
+      {
+        "name": "Pant body",
+        "sourceModel": "Player/PantClass01.bmd"
+      },
+      {
+        "name": "Glove body",
+        "sourceModel": "Player/GloveClass01.bmd"
+      },
+      {
+        "name": "Boot body",
+        "sourceModel": "Player/BootClass01.bmd"
+      }
+    ]
+  },
+  "wizard": {
+    "name": "Unarmored",
+    "source": "Player/Class02",
+    "pieces": [
+      {
+        "name": "Helm body",
+        "sourceModel": "Player/HelmClass02.bmd"
+      },
+      {
+        "name": "Armor body",
+        "sourceModel": "Player/ArmorClass02.bmd"
+      },
+      {
+        "name": "Pant body",
+        "sourceModel": "Player/PantClass02.bmd"
+      },
+      {
+        "name": "Glove body",
+        "sourceModel": "Player/GloveClass02.bmd"
+      },
+      {
+        "name": "Boot body",
+        "sourceModel": "Player/BootClass02.bmd"
+      }
+    ]
+  },
+  "elf": {
+    "name": "Unarmored",
+    "source": "Player/Class03",
+    "pieces": [
+      {
+        "name": "Helm body",
+        "sourceModel": "Player/HelmClass03.bmd"
+      },
+      {
+        "name": "Armor body",
+        "sourceModel": "Player/ArmorClass03.bmd"
+      },
+      {
+        "name": "Pant body",
+        "sourceModel": "Player/PantClass03.bmd"
+      },
+      {
+        "name": "Glove body",
+        "sourceModel": "Player/GloveClass03.bmd"
+      },
+      {
+        "name": "Boot body",
+        "sourceModel": "Player/BootClass03.bmd"
       }
     ]
   }

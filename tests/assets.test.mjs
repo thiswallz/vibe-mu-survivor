@@ -55,8 +55,18 @@ test('reward armor sets retain original models, moving poses and chrome assets',
 
 test('S20 catalog verifies set names, Grand Soul pants, and Bull Fighter model',()=>{
  const catalog=JSON.parse(fs.readFileSync(path.join(ui,'assets/armor-catalog.json'))),manifest=JSON.parse(fs.readFileSync(path.join(ui,'assets/manifest.json')));
- for(const [id,name]of [['knight','Dragon Set'],['wizard','Legendary Set'],['elf','Wind Set'],['knight-armor','Dark Phoenix Set'],['wizard-armor','Grand Soul Set'],['elf-armor','Guardian Set']])assert.equal(catalog[id].name,name);
+ for(const [id,name]of [['knight','Unarmored'],['wizard','Unarmored'],['elf','Unarmored'],['knight-armor','Dark Phoenix Set'],['wizard-armor','Grand Soul Set'],['elf-armor','Guardian Set']])assert.equal(catalog[id].name,name);
  assert.ok(manifest['wizard-armor'].source.includes('Player/t_PantMale19.bmd'));assert.deepEqual(manifest.bull.source,['Monster/Monster01.bmd']);
  for(const id of ['spider','budge','bull','hound','giant'])for(const kind of ['idle','attack','death'])assert.ok(fs.statSync(path.join(ui,`assets/audio/${kind}-${id}.wav`)).size>100);
  for(const id of ['kundun-box','jewel-bless','jewel-soul','jewel-life','jewel-chaos']){const model=JSON.parse(fs.readFileSync(path.join(ui,`assets/models/loot-${id}.json`)));for(const part of model.parts)assert.ok(fs.existsSync(path.join(ui,part.texture)));}
+});
+
+test('starting heroes use native unarmored bodies; armor skin placeholders resolve by class',()=>{
+ const manifest=JSON.parse(fs.readFileSync(path.join(ui,'assets/manifest.json')));
+ for(const [id,index,skin]of [['knight','01','skin_barbarian_01.jpg'],['wizard','02','skin_wizard_01.jpg'],['elf','03','skin_archer_01.jpg']]){
+  assert.ok(manifest[id].source.every(p=>p.includes('Class'+index)));
+  const body=JSON.parse(fs.readFileSync(path.join(ui,`assets/models/${id}.json`)));assert.equal(body.parts.length,5);
+  const armor=JSON.parse(fs.readFileSync(path.join(ui,`assets/models/${id}-armor.json`)));
+  assert.ok(armor.parts.some(p=>p.resolvedTexture===skin),id+' face texture');assert.ok(armor.parts.every(p=>!p.sourceTexture.startsWith('hide')));
+ }
 });

@@ -1,39 +1,39 @@
 {
   "knight": {
     "source": [
-      "Player/HelmMale02.bmd",
-      "Player/ArmorMale02.bmd",
-      "Player/PantMale02.bmd",
-      "Player/GloveMale02.bmd",
-      "Player/BootMale02.bmd"
+      "Player/HelmClass01.bmd",
+      "Player/ArmorClass01.bmd",
+      "Player/PantClass01.bmd",
+      "Player/GloveClass01.bmd",
+      "Player/BootClass01.bmd"
     ],
     "file": "assets/models/knight.json",
-    "triangles": 874,
-    "height": 1.9686800000000002
+    "triangles": 1383,
+    "height": 1.90601
   },
   "wizard": {
     "source": [
-      "Player/HelmMale04.bmd",
-      "Player/ArmorMale04.bmd",
-      "Player/PantMale04.bmd",
-      "Player/GloveMale04.bmd",
-      "Player/BootMale04.bmd"
+      "Player/HelmClass02.bmd",
+      "Player/ArmorClass02.bmd",
+      "Player/PantClass02.bmd",
+      "Player/GloveClass02.bmd",
+      "Player/BootClass02.bmd"
     ],
     "file": "assets/models/wizard.json",
-    "triangles": 682,
-    "height": 1.9776799999999999
+    "triangles": 1407,
+    "height": 1.88761
   },
   "elf": {
     "source": [
-      "Player/HelmElf03.bmd",
-      "Player/ArmorElf03.bmd",
-      "Player/PantElf03.bmd",
-      "Player/GloveElf03.bmd",
-      "Player/BootElf03.bmd"
+      "Player/HelmClass03.bmd",
+      "Player/ArmorClass03.bmd",
+      "Player/PantClass03.bmd",
+      "Player/GloveClass03.bmd",
+      "Player/BootClass03.bmd"
     ],
     "file": "assets/models/elf.json",
-    "triangles": 680,
-    "height": 1.92656
+    "triangles": 1752,
+    "height": 1.88737
   },
   "knight-armor": {
     "source": [
@@ -44,7 +44,7 @@
       "Player/BootMale18.bmd"
     ],
     "file": "assets/models/knight-armor.json",
-    "triangles": 1321,
+    "triangles": 1275,
     "height": 2.0474200000000002
   },
   "wizard-armor": {
@@ -56,7 +56,7 @@
       "Player/BootMale19.bmd"
     ],
     "file": "assets/models/wizard-armor.json",
-    "triangles": 800,
+    "triangles": 756,
     "height": 1.97002
   },
   "elf-armor": {
@@ -68,7 +68,7 @@
       "Player/BootElf05.bmd"
     ],
     "file": "assets/models/elf-armor.json",
-    "triangles": 840,
+    "triangles": 812,
     "height": 1.98247
   },
   "spider": {

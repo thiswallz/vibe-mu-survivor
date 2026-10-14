@@ -47,7 +47,7 @@ def parse(path):
   for keys in actions:
    pos=[r.read('3f') for _ in range(keys)];rot=[r.read('3f') for _ in range(keys)];anim.append((pos,rot))
   bones.append((parent,anim,name))
- assert 0<=len(data)-r.o<16,(path,r.o,len(data))
+ assert 0<=len(data)-r.o<=16,(path,r.o,len(data))
  return meshes,bones,actions
 
 def matrices(bones,action=0,frame=0):
@@ -107,6 +107,10 @@ def convert(key,paths,animate=False,playerRig=None):
   if playerRig:mat=matsForClips[0]
   if animate and action>=0:frames=[matrices(bones,action,int(i*actions[action]/4)) for i in range(4)]
   for vv,uv,tri,tex in meshes:
+   if playerRig and tex.lower().startswith('hide'):continue
+   resolved=tex
+   if playerRig and tex.lower().startswith(('skin','level')):
+    resolved={'knight':'skin_barbarian_01.jpg','wizard':'skin_wizard_01.jpg','elf':'skin_archer_01.jpg'}[key.split('-')[0]]
    positions=[];uvs=[];morph=[[] for _ in frames]
    def transform(v,mats):
     node,x,y,z=v;vec=np.array([x,y,z,1]);v=mats[node]@vec if node>=0 else vec
@@ -116,7 +120,7 @@ def convert(key,paths,animate=False,playerRig=None):
      positions.extend(transform(vv[vi[k]],mat));uvs.extend([uv[ui[k]][0],1-uv[ui[k]][1]])
      for idx,m in enumerate(frames):morph[idx].extend(transform(vv[vi[k]],m))
    if positions:
-    part={'positions':positions,'uvs':uvs,'texture':texture(path.parent,tex),'sourceTexture':tex,'sourceModel':str(path.relative_to(SOURCE))}
+    part={'positions':positions,'uvs':uvs,'texture':texture(path.parent,resolved),'sourceTexture':tex,'resolvedTexture':resolved,'sourceModel':str(path.relative_to(SOURCE))}
     if playerRig:part['upperBody']=sum(v[0]>=17 for v in vv)>len(vv)/2
     if morph:part['frames']=morph
     parts.append(part);bounds.extend(np.array(positions).reshape(-1,3).tolist())
@@ -186,7 +190,7 @@ if __name__=='__main__':
   subprocess.run([os.environ.get('MU_NODE','node'),str(ROOT/'scripts'/'decode-player.mjs'),str(player/'player.bmd'),str(decoded)],check=True)
   _,rig,rigActions=parse(decoded)
  playerRig=(rig,rigActions)
- for key,setname in [('knight','Male02'),('wizard','Male04'),('elf','Elf03'),('knight-armor','Male18'),('wizard-armor','Male19'),('elf-armor','Elf05')]:
+ for key,setname in [('knight','Class01'),('wizard','Class02'),('elf','Class03'),('knight-armor','Male18'),('wizard-armor','Male19'),('elf-armor','Elf05')]:
   convert(key,[player/f"{'t_' if part=='Pant' and setname=='Male19' else ''}{part}{setname}.bmd" for part in ['Helm','Armor','Pant','Glove','Boot']],playerRig=playerRig)
  for key,num in [('spider',10),('budge',3),('bull',1),('hound',2),('giant',11)]:convert(key,[SOURCE/'Monster'/f'Monster{num:02}.bmd'],True)
  for key,name in [('tree','Tree01'),('rock','Stone01'),('statue','StoneStatue01'),('wall','StoneWall01'),('house','House01'),('house2','House02'),('fence','Fence01'),('bonfire','Bonfire01'),('streetlight','StreetLight01'),('well','Well01'),('ruin','StoneMuWall01'),('grass','Grass01')]:
