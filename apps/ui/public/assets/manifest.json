@@ -1,27 +1,27 @@
 {
   "knight": {
     "source": [
-      "Player/HelmClass01.bmd",
-      "Player/ArmorClass01.bmd",
-      "Player/PantClass01.bmd",
-      "Player/GloveClass01.bmd",
-      "Player/BootClass01.bmd"
-    ],
-    "file": "assets/models/knight.json",
-    "triangles": 1383,
-    "height": 1.90601
-  },
-  "wizard": {
-    "source": [
       "Player/HelmClass02.bmd",
       "Player/ArmorClass02.bmd",
       "Player/PantClass02.bmd",
       "Player/GloveClass02.bmd",
       "Player/BootClass02.bmd"
     ],
-    "file": "assets/models/wizard.json",
+    "file": "assets/models/knight.json",
     "triangles": 1407,
-    "height": 1.88761
+    "height": 1.90315
+  },
+  "wizard": {
+    "source": [
+      "Player/HelmClass01.bmd",
+      "Player/ArmorClass01.bmd",
+      "Player/PantClass01.bmd",
+      "Player/GloveClass01.bmd",
+      "Player/BootClass01.bmd"
+    ],
+    "file": "assets/models/wizard.json",
+    "triangles": 1383,
+    "height": 1.8883999999999999
   },
   "elf": {
     "source": [
@@ -910,5 +910,125 @@
     "file": "assets/models/lorencia-95.json",
     "triangles": 68,
     "height": 3.24032
+  },
+  "loot-knight-helm": {
+    "source": [
+      "Item/HelmMale18.bmd"
+    ],
+    "file": "assets/models/loot-knight-helm.json",
+    "triangles": 249,
+    "height": 0.5000499999999999
+  },
+  "loot-knight-armor": {
+    "source": [
+      "Item/ArmorMale18.bmd"
+    ],
+    "file": "assets/models/loot-knight-armor.json",
+    "triangles": 410,
+    "height": 1.14446
+  },
+  "loot-knight-pants": {
+    "source": [
+      "Item/PantMale18.bmd"
+    ],
+    "file": "assets/models/loot-knight-pants.json",
+    "triangles": 198,
+    "height": 0.67809
+  },
+  "loot-knight-gloves": {
+    "source": [
+      "Item/GloveMale18.bmd"
+    ],
+    "file": "assets/models/loot-knight-gloves.json",
+    "triangles": 266,
+    "height": 0.5606700000000001
+  },
+  "loot-knight-boots": {
+    "source": [
+      "Item/BootMale18.bmd"
+    ],
+    "file": "assets/models/loot-knight-boots.json",
+    "triangles": 198,
+    "height": 0.85722
+  },
+  "loot-wizard-helm": {
+    "source": [
+      "Item/HelmMale19.bmd"
+    ],
+    "file": "assets/models/loot-wizard-helm.json",
+    "triangles": 120,
+    "height": 0.7108100000000002
+  },
+  "loot-wizard-armor": {
+    "source": [
+      "Item/ArmorMale19.bmd"
+    ],
+    "file": "assets/models/loot-wizard-armor.json",
+    "triangles": 186,
+    "height": 0.78
+  },
+  "loot-wizard-pants": {
+    "source": [
+      "Item/t_PantMale19.bmd"
+    ],
+    "file": "assets/models/loot-wizard-pants.json",
+    "triangles": 166,
+    "height": 0.8732900000000001
+  },
+  "loot-wizard-gloves": {
+    "source": [
+      "Item/GloveMale19.bmd"
+    ],
+    "file": "assets/models/loot-wizard-gloves.json",
+    "triangles": 176,
+    "height": 0.7307800000000001
+  },
+  "loot-wizard-boots": {
+    "source": [
+      "Item/BootMale19.bmd"
+    ],
+    "file": "assets/models/loot-wizard-boots.json",
+    "triangles": 152,
+    "height": 0.68984
+  },
+  "loot-elf-helm": {
+    "source": [
+      "Item/HelmElf05.bmd"
+    ],
+    "file": "assets/models/loot-elf-helm.json",
+    "triangles": 162,
+    "height": 0.5076800000000001
+  },
+  "loot-elf-armor": {
+    "source": [
+      "Item/ArmorElf05.bmd"
+    ],
+    "file": "assets/models/loot-elf-armor.json",
+    "triangles": 236,
+    "height": 0.60019
+  },
+  "loot-elf-pants": {
+    "source": [
+      "Item/PantElf05.bmd"
+    ],
+    "file": "assets/models/loot-elf-pants.json",
+    "triangles": 134,
+    "height": 0.78775
+  },
+  "loot-elf-gloves": {
+    "source": [
+      "Item/GloveElf05.bmd"
+    ],
+    "file": "assets/models/loot-elf-gloves.json",
+    "triangles": 156,
+    "height": 0.52483
+  },
+  "loot-elf-boots": {
+    "source": [
+      "Item/BootElf05.bmd"
+    ],
+    "file": "assets/models/loot-elf-boots.json",
+    "triangles": 152,
+    "height": 0.6446299999999999
   }
 }

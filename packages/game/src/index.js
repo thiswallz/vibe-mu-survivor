@@ -1,4 +1,5 @@
-import {createLootState,dropLoot,collectLoot} from './loot.js';
+import {emptyEquipment,autoEquip,chooseDropSlots} from './equipment.js';
+import {createLootState,dropLoot,collectLoot,mergeInventory} from './loot.js';
 export const CLASSES = [
  { id:'knight', name:'Dark Knight', title:'The blade of Lorencia', skill:'Twisting Slash', role:'MELEE · DURABLE', color:'#efb46c', hp:160, speed:6.4, damage:32, cooldown:0.8, range:3.8, description:'Stand your ground. A sweeping blade cuts through everything around you.' },
  { id:'wizard', name:'Dark Wizard', title:'Master of the arcane', skill:'Evil Spirits', role:'MAGIC · AREA DAMAGE', color:'#9bafff', hp:105, speed:6.1, damage:25, cooldown:0.75, range:17, description:'Call the spirits. Seeking magic strikes the horde, or burn it with Hellfire.' },
@@ -33,9 +34,6 @@ export function rewardOptions(s){
  const rewards=[];
  if(s.level>=2&&!s.unlockedSkills.includes(SKILLS[s.hero.id][1].id))rewards.push({id:'unlock-skill',icon:'✦',name:'Learn '+SKILLS[s.hero.id][1].name,text:'Unlock a new skill and equip it. Switch with 1 / 2.',apply:s=>{s.unlockedSkills.push(SKILLS[s.hero.id][1].id);s.skill=SKILLS[s.hero.id][1].id;}});
  if(s.level>=3&&s.auraLevel<2)rewards.push({id:'aura',icon:'◉',name:s.auraLevel?'Greater aura':'Aura of protection',text:'Orbiting energy damages nearby enemies and protects you.',apply:s=>{s.auraLevel++;}});
- if(s.level>=4&&!s.armorEquipped)rewards.push({id:'armor',icon:'♜',name:ARMOR[s.hero.id].name,text:'Equip a new MU armor set. +35 health, 18% damage reduction.',apply:s=>{s.armorEquipped=true;s.maxHp+=35;s.hp=Math.min(s.maxHp,s.hp+35);}});
- if(s.armorEquipped&&s.level>=5&&s.enhancement<13)rewards.push({id:'enhance13',icon:'✧',name:'Armor +13',text:'Golden chrome armor shine. +15% power and extra protection.',apply:s=>{s.enhancement=13;s.damage*=1.15;}});
- if(s.armorEquipped&&s.level>=8&&s.enhancement===13)rewards.push({id:'enhance15',icon:'✧',name:'Armor +15',text:'Brilliant armor shine. +20% power and stronger protection.',apply:s=>{s.enhancement=15;s.damage*=1.2;}});
  return rewards;
 }
 export function upgradeDefinition(s,id){return [...UPGRADES,...rewardOptions(s)].find(u=>u.id===id);}
@@ -50,7 +48,7 @@ export function moveEntity(entity,dx,dz,obstacles=[],radius=.42){
 }
 export function createRun(id,random=Math.random){
  const hero=CLASSES.find(c=>c.id===id); if(!hero)throw new Error('Unknown class');
- return {hero,random,loot:createLootState(),criticalChance:.12,criticalMultiplier:1.5,monsterVoiceTimer:1,skill:SKILLS[id][0].id,unlockedSkills:[SKILLS[id][0].id],auraLevel:0,auraTimer:0,armorEquipped:false,enhancement:0,hitFlash:0,lastSurgeWave:0,moving:false,walking:false,travel:0,obstacles:[],attackAnimation:0,attackDuration:.6,phase:'playing',time:0,wave:1,hp:hero.hp,maxHp:hero.hp,speed:hero.speed,damage:hero.damage,cooldown:hero.cooldown,slashRange:hero.range,projectiles:id==='elf'?2:1,magnet:3.1,x:0,z:0,facing:0,enemies:[],shots:[],gems:[],events:[],kills:0,level:1,xp:0,xpNeeded:12,spawnTimer:.8,attackTimer:0,dashCooldown:0,dashTime:0,invulnerable:0,bossSpawned:false,bossDefeated:false,nextId:1,choices:[],pendingLevels:0};
+ return {hero,random,loot:createLootState(),inventory:[],equipment:emptyEquipment(),dropSlots:chooseDropSlots(id,null,random),gearHp:0,gearDefense:0,criticalChance:.12,criticalMultiplier:1.5,monsterVoiceTimer:1,skill:SKILLS[id][0].id,unlockedSkills:[SKILLS[id][0].id],auraLevel:0,auraTimer:0,armorEquipped:false,enhancement:0,hitFlash:0,lastSurgeWave:0,moving:false,walking:false,travel:0,obstacles:[],attackAnimation:0,attackDuration:.6,phase:'playing',time:0,wave:1,hp:hero.hp,maxHp:hero.hp,speed:hero.speed,damage:hero.damage,cooldown:hero.cooldown,slashRange:hero.range,projectiles:id==='elf'?2:1,magnet:3.1,x:0,z:0,facing:0,enemies:[],shots:[],gems:[],events:[],kills:0,level:1,xp:0,xpNeeded:12,spawnTimer:.8,attackTimer:0,dashCooldown:0,dashTime:0,invulnerable:0,bossSpawned:false,bossDefeated:false,nextId:1,choices:[],pendingLevels:0};
 }
 function event(s,type,data={}){s.events.push({type,...data})}
 export function spawnEnemy(s,type,elite=false){
@@ -62,7 +60,7 @@ export function spawnEnemy(s,type,elite=false){
 }
 function hurt(s,e,damage){
  if(e.hp<=0)return;const critical=s.random()<s.criticalChance;if(critical)damage*=s.criticalMultiplier;e.hp-=damage;const away=dist(e,s)||1;moveEntity(e,(e.x-s.x)/away*.1,(e.z-s.z)/away*.1,s.obstacles,e.size*.24);e.hit=.16;event(s,'hit',{uid:e.uid,id:e.id,x:e.x,z:e.z,size:e.size,damage,critical});
- if(e.hp<=0){s.kills++;const drop=dropLoot(s.loot,e,s.kills,()=>s.nextId++);if(drop)event(s,'loot-drop',{id:drop.id,x:e.x,z:e.z});s.gems.push({uid:s.nextId++,x:e.x,z:e.z,xp:e.elite?60:e.xp});event(s,'death',{uid:e.uid,id:e.id,x:e.x,z:e.z,size:e.size,color:e.color,facing:Math.atan2(s.x-e.x,s.z-e.z)});if(e.elite)s.bossDefeated=true;}
+ if(e.hp<=0){s.kills++;const drop=dropLoot(s.loot,e,s.kills,()=>s.nextId++,s);if(drop)event(s,'loot-drop',{id:drop.id,x:e.x,z:e.z});s.gems.push({uid:s.nextId++,x:e.x,z:e.z,xp:e.elite?60:e.xp});event(s,'death',{uid:e.uid,id:e.id,x:e.x,z:e.z,size:e.size,color:e.color,facing:Math.atan2(s.x-e.x,s.z-e.z)});if(e.elite)s.bossDefeated=true;}
 }
 function levelUp(s){
  s.phase='upgrade';const special=rewardOptions(s);let featured=special.find(u=>u.id==='unlock-skill'&&s.level%2===0)||special.find(u=>u.id==='armor')||special.find(u=>u.id==='enhance15')||special.find(u=>u.id==='enhance13')||special[0];const basics=[...UPGRADES].sort(()=>s.random()-.5).slice(0,featured?2:3);s.choices=[...(featured?[featured]:[]),...basics].map(u=>u.id);event(s,'level');
@@ -121,7 +119,7 @@ export function tick(s,dt,input={}){
  for(const e of s.enemies){
   if(e.hp<=0)continue;e.slow=Math.max(0,(e.slow||0)-dt);e.hit=Math.max(0,e.hit-dt);const d=dist(e,s);
   if(d>.65){const step=e.speed*(e.slow>0?.45:1)*(e.hit>0?.3:1)*dt,dx=(s.x-e.x)/d*step,dz=(s.z-e.z)/d*step;const moved=moveEntity(e,dx,dz,s.obstacles,e.size*.24);if(moved<step*.2){for(const angle of [.65,-.65,1.2,-1.2,Math.PI/2,-Math.PI/2]){const nx=dx*Math.cos(angle)-dz*Math.sin(angle),nz=dx*Math.sin(angle)+dz*Math.cos(angle);if(moveEntity(e,nx,nz,s.obstacles,e.size*.24)>step*.2)break;}}}
-  if(d<.6+e.size*.27&&s.invulnerable===0){const reduction=(s.armorEquipped?.18:0)+(s.enhancement===15?.2:s.enhancement===13?.1:0)+(s.auraLevel?.06:0);s.hp=Math.max(0,s.hp-e.damage*(1-reduction));s.invulnerable=.7;s.hitFlash=.32;event(s,'monster-attack',{id:e.id,x:e.x,z:e.z});event(s,'hurt',{damage:e.damage*(1-reduction),x:s.x,z:s.z});}
+  if(d<.6+e.size*.27&&s.invulnerable===0){const reduction=s.gearDefense+(s.auraLevel?.06:0);s.hp=Math.max(0,s.hp-e.damage*(1-reduction));s.invulnerable=.7;s.hitFlash=.32;event(s,'monster-attack',{id:e.id,x:e.x,z:e.z});event(s,'hurt',{damage:e.damage*(1-reduction),x:s.x,z:s.z});}
  }
  s.enemies=s.enemies.filter(e=>e.hp>0);
  for(const g of s.gems){const d=dist(g,s);if(d<s.magnet){const move=Math.min(d,dt*14);g.x+=(s.x-g.x)/(d||1)*move;g.z+=(s.z-g.z)/(d||1)*move;}if(d<.7){s.xp+=g.xp;g.collected=true}}
@@ -129,9 +127,11 @@ export function tick(s,dt,input={}){
  // Combine old distant gems to bound retained geometry in a long run.
  if(s.gems.length>300){const a=s.gems.shift();s.gems[0].xp+=a.xp;}
  while(s.xp>=s.xpNeeded){s.xp-=s.xpNeeded;s.level++;s.pendingLevels++;s.xpNeeded=Math.round(s.xpNeeded*1.24+4);}
- for(const item of collectLoot(s.loot,s.x,s.z))event(s,'loot-pickup',item);
+ for(const item of collectLoot(s.loot,s.x,s.z))receiveItem(s,item);
  s.monsterVoiceTimer-=dt;if(s.monsterVoiceTimer<=0){s.monsterVoiceTimer=2.3;const nearby=s.enemies.filter(e=>e.hp>0&&dist(e,s)<16);if(nearby.length){const e=nearby[Math.floor(s.random()*nearby.length)];event(s,'monster-idle',{id:e.id,x:e.x,z:e.z});}}
  if(s.hp<=0){s.phase='dead';event(s,'end');}
- else if(s.time>=DURATION&&s.bossDefeated){for(const item of collectLoot(s.loot,s.x,s.z,Infinity))event(s,'loot-pickup',item);s.phase='won';event(s,'end');}
+ else if(s.time>=DURATION&&s.bossDefeated){for(const item of collectLoot(s.loot,s.x,s.z,Infinity))receiveItem(s,item);s.phase='won';event(s,'end');}
  else if(s.pendingLevels>0)levelUp(s);
 }
+
+function receiveItem(s,item){s.inventory=mergeInventory(s.inventory,[item]);const equipped=autoEquip(s,item);event(s,'loot-pickup',{...item,equipped});}

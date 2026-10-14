@@ -19,6 +19,6 @@ def write_catalog(source,out):
   armor=next(p for p in pieces if p['category']==8)
   if not armor['name'].startswith(expected):raise ValueError('Unexpected armor name '+armor['name'])
   catalog[key]={'name':expected+' Set','source':'Local/item.bmd','pieces':pieces}
- for key,suffix in [('knight','Class01'),('wizard','Class02'),('elf','Class03')]:
+ for key,suffix in [('knight','Class02'),('wizard','Class01'),('elf','Class03')]:
   catalog[key]={'name':'Unarmored','source':'Player/'+suffix,'pieces':[{'name':part+' body','sourceModel':f'Player/{part}{suffix}.bmd'} for part in ['Helm','Armor','Pant','Glove','Boot']]}
  (out/'armor-catalog.json').write_text(json.dumps(catalog,indent=2))

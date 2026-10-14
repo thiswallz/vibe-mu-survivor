@@ -124,32 +124,6 @@
   },
   "knight": {
     "name": "Unarmored",
-    "source": "Player/Class01",
-    "pieces": [
-      {
-        "name": "Helm body",
-        "sourceModel": "Player/HelmClass01.bmd"
-      },
-      {
-        "name": "Armor body",
-        "sourceModel": "Player/ArmorClass01.bmd"
-      },
-      {
-        "name": "Pant body",
-        "sourceModel": "Player/PantClass01.bmd"
-      },
-      {
-        "name": "Glove body",
-        "sourceModel": "Player/GloveClass01.bmd"
-      },
-      {
-        "name": "Boot body",
-        "sourceModel": "Player/BootClass01.bmd"
-      }
-    ]
-  },
-  "wizard": {
-    "name": "Unarmored",
     "source": "Player/Class02",
     "pieces": [
       {
@@ -171,6 +145,32 @@
       {
         "name": "Boot body",
         "sourceModel": "Player/BootClass02.bmd"
+      }
+    ]
+  },
+  "wizard": {
+    "name": "Unarmored",
+    "source": "Player/Class01",
+    "pieces": [
+      {
+        "name": "Helm body",
+        "sourceModel": "Player/HelmClass01.bmd"
+      },
+      {
+        "name": "Armor body",
+        "sourceModel": "Player/ArmorClass01.bmd"
+      },
+      {
+        "name": "Pant body",
+        "sourceModel": "Player/PantClass01.bmd"
+      },
+      {
+        "name": "Glove body",
+        "sourceModel": "Player/GloveClass01.bmd"
+      },
+      {
+        "name": "Boot body",
+        "sourceModel": "Player/BootClass01.bmd"
       }
     ]
   },

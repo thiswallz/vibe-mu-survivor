@@ -43,9 +43,10 @@ export function createServer({production=false,serveUI=true,upstream,uiRoot}={})
   if(requested.startsWith('/api/')||!serveUI){res.writeHead(404).end('Not found');return;}
   const shared=path.join(app,'packages/game/src/index.js');
   const sharedLoot=path.join(app,'packages/game/src/loot.js');
+  const sharedEquipment=path.join(app,'packages/game/src/equipment.js');
   const sharedInventory=path.join(app,'packages/game/src/inventory.js');
-  const file=!production&&requested==='/shared/inventory.js'?sharedInventory:!production&&requested==='/shared/loot.js'?sharedLoot:!production&&requested==='/shared/game.js'?shared:path.resolve(root,'.'+(requested==='/'?'/index.html':requested));
-  if(!file.startsWith(root+path.sep)&&!([shared,sharedLoot,sharedInventory].includes(file)&&!production)){res.writeHead(403).end();return;}
+  const file=!production&&requested==='/shared/equipment.js'?sharedEquipment:!production&&requested==='/shared/inventory.js'?sharedInventory:!production&&requested==='/shared/loot.js'?sharedLoot:!production&&requested==='/shared/game.js'?shared:path.resolve(root,'.'+(requested==='/'?'/index.html':requested));
+  if(!file.startsWith(root+path.sep)&&!([shared,sharedLoot,sharedInventory,sharedEquipment].includes(file)&&!production)){res.writeHead(403).end();return;}
   fs.stat(file,(error,stat)=>{
    if(error||!stat.isFile()){res.writeHead(404).end('Not found');return;}
    let start=0,end=stat.size-1,status=200;

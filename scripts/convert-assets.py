@@ -120,7 +120,7 @@ def convert(key,paths,animate=False,playerRig=None):
      positions.extend(transform(vv[vi[k]],mat));uvs.extend([uv[ui[k]][0],1-uv[ui[k]][1]])
      for idx,m in enumerate(frames):morph[idx].extend(transform(vv[vi[k]],m))
    if positions:
-    part={'positions':positions,'uvs':uvs,'texture':texture(path.parent,resolved),'sourceTexture':tex,'resolvedTexture':resolved,'sourceModel':str(path.relative_to(SOURCE))}
+    part={'positions':positions,'uvs':uvs,'texture':texture(path.parent,resolved),'sourceTexture':tex,'resolvedTexture':resolved,'sourceModel':str(path.relative_to(SOURCE)),'slot':{'Helm':'helm','Armor':'armor','Pant':'pants','t_Pant':'pants','Glove':'gloves','Boot':'boots'}.get(next((prefix for prefix in ['t_Pant','Helm','Armor','Pant','Glove','Boot'] if path.stem.startswith(prefix)),''))}
     if playerRig:part['upperBody']=sum(v[0]>=17 for v in vv)>len(vv)/2
     if morph:part['frames']=morph
     parts.append(part);bounds.extend(np.array(positions).reshape(-1,3).tolist())
@@ -190,8 +190,10 @@ if __name__=='__main__':
   subprocess.run([os.environ.get('MU_NODE','node'),str(ROOT/'scripts'/'decode-player.mjs'),str(player/'player.bmd'),str(decoded)],check=True)
   _,rig,rigActions=parse(decoded)
  playerRig=(rig,rigActions)
- for key,setname in [('knight','Class01'),('wizard','Class02'),('elf','Class03'),('knight-armor','Male18'),('wizard-armor','Male19'),('elf-armor','Elf05')]:
+ for key,setname in [('knight','Class02'),('wizard','Class01'),('elf','Class03'),('knight-armor','Male18'),('wizard-armor','Male19'),('elf-armor','Elf05')]:
   convert(key,[player/f"{'t_' if part=='Pant' and setname=='Male19' else ''}{part}{setname}.bmd" for part in ['Helm','Armor','Pant','Glove','Boot']],playerRig=playerRig)
+ for hero,suffix in [('knight','Male18'),('wizard','Male19'),('elf','Elf05')]:
+  for slot,prefix in [('helm','Helm'),('armor','Armor'),('pants','t_Pant' if hero=='wizard' else 'Pant'),('gloves','Glove'),('boots','Boot')]:convert(f'loot-{hero}-{slot}',[SOURCE/'Item'/f'{prefix}{suffix}.bmd'])
  for key,num in [('spider',10),('budge',3),('bull',1),('hound',2),('giant',11)]:convert(key,[SOURCE/'Monster'/f'Monster{num:02}.bmd'],True)
  for key,name in [('tree','Tree01'),('rock','Stone01'),('statue','StoneStatue01'),('wall','StoneWall01'),('house','House01'),('house2','House02'),('fence','Fence01'),('bonfire','Bonfire01'),('streetlight','StreetLight01'),('well','Well01'),('ruin','StoneMuWall01'),('grass','Grass01')]:
   try:convert(key,[SOURCE/'Object1'/f'{name}.bmd'])
@@ -201,7 +203,7 @@ if __name__=='__main__':
  for name in ['Chrome01.OZJ','Chrome02.OZJ','Shiny01.OZJ','AuraWave_Blue_00.OZJ']:texture(SOURCE/'Effect',name)
  for key,name in [('slash','WaveForce'),('arrow','Arrow01'),('ice','Ice01'),('fire','Fire01'),('inferno','Inferno01'),('spirit','Bone01')]:convert('skill-'+key,[SOURCE/'Skill'/(name+'.bmd')])
  for key,name in [('sword','Sword02'),('staff','Staff01'),('bow','Bow01')]:convert('weapon-'+key,[SOURCE/'Item'/(name+'.bmd')])
- for name in ['newui_menu01.OZJ','newui_menu02.OZJ','newui_menu03.OZJ','newui_menu_red.OZJ','newui_menu_blue.OZJ','newui_Exbar.OZJ','newui_skill.OZJ','newui_skillbox.OZJ','newui_Party_HpBar.OZJ','newui_Party_Lifebar01.OZJ','newui_Party_Lifebar02.OZJ']:texture(SOURCE/'Interface',name)
+ for name in ['InventoryBox2.OZJ','newui_item_back01.OZT','newui_item_back04.OZT','newui_item_cap.OZT','newui_item_upper.OZT','newui_item_lower.OZT','newui_item_gloves.OZT','newui_item_boots.OZT','newui_menu01.OZJ','newui_menu02.OZJ','newui_menu03.OZJ','newui_menu_red.OZJ','newui_menu_blue.OZJ','newui_Exbar.OZJ','newui_skill.OZJ','newui_skillbox.OZJ','newui_Party_HpBar.OZJ','newui_Party_Lifebar01.OZJ','newui_Party_Lifebar02.OZJ']:texture(SOURCE/'Interface',name)
  for id,prefix in [('spider','Spider'),('budge','Budge'),('bull','Bull'),('hound','Hound'),('giant','Giant')]:
   for kind,filename in [('idle',f'm{prefix}1.wav'),('attack',f'm{prefix}Attack1.wav' if id!='spider' else 'mSpider1.wav')]:shutil.copy2(SOURCE/'Sound'/filename,OUT/'audio'/f'{kind}-{id}.wav')
  for source,dest in [('Sound/mSpider1.wav','death-spider.wav'),('Sound/mBudgeDie.wav','death-budge.wav'),('Sound/mBullDie.wav','death-bull.wav'),('Sound/mHoundDie.wav','death-hound.wav'),('Sound/mGiantDie.wav','death-giant.wav'),('Sound/pMaleScream1.wav','hurt-knight.wav'),('Sound/pMaleScream2.wav','hurt-wizard.wav'),('Sound/pFemaleScream1.wav','hurt-elf.wav'),('Sound/eMeleeHit1.wav','hit.wav'),('Sound/pDropItem.wav','armor.wav'),('Sound/sEvil.wav','evil.wav'),('Sound/sHellFire.wav','hellfire.wav'),('Sound/eIceArrow.wav','ice.wav'),('Sound/SwordInertiaAttack.wav','stab.wav'),('Music/Pub.mp3','lorencia-pub.mp3'),('Sound/eSwingLightSword.wav','knight.wav'),('Sound/sMagic.wav','wizard.wav'),('Sound/Magic_Arrow_Cast_01.wav','elf.wav'),('Sound/pLevelUp.wav','level-up.wav')]:shutil.copy2(SOURCE/source,OUT/'audio'/dest)
