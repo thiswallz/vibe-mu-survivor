@@ -130,6 +130,7 @@ export function enhanceArmor(
   }
 }
 export function updateArmor(root: THREE.Group, time: number) {
+  if (root.userData.armorSetAura) updateArmorSetAura(root.userData.armorSetAura, time);
   const level = root.userData.enhancement;
   if (!level) return;
   root.userData.body.traverse((mesh: THREE.Mesh) => {
@@ -165,6 +166,43 @@ export function updateArmor(root: THREE.Group, time: number) {
     const pulse = Math.max(0, Math.sin(time * 3 + phase)) ** 8;
     glow.material.opacity = pulse * 0.9;
     glow.scale.setScalar((spark.level === 15 ? 0.22 : 0.14) * (1 + pulse * 0.7));
+  }
+}
+export function createArmorSetAura(shiny: THREE.Texture, height: number) {
+  const group = new THREE.Group();
+  group.name = 'armor-set-aura';
+  for (let trail = 0; trail < 3; trail++) {
+    for (let i = 0; i < 24; i++) {
+      const sprite = new THREE.Sprite(
+        new THREE.SpriteMaterial({
+          map: shiny,
+          color: trail === 1 ? '#f4f0c5' : '#d2e9ff',
+          transparent: true,
+          opacity: 0.48 * (1 - i / 24),
+          blending: THREE.AdditiveBlending,
+          depthWrite: false,
+          toneMapped: false,
+        }),
+      );
+      sprite.scale.setScalar(height * (i === 0 ? 0.1 : 0.045));
+      sprite.userData.trail = trail;
+      sprite.userData.index = i;
+      group.add(sprite);
+    }
+  }
+  group.userData.height = height;
+  return group;
+}
+function updateArmorSetAura(group: THREE.Group, time: number) {
+  const height = group.userData.height;
+  for (const sprite of group.children) {
+    const phase =
+      time * 2.5 + (sprite.userData.trail * Math.PI * 2) / 3 - sprite.userData.index * 0.06;
+    sprite.position.set(
+      Math.cos(phase) * height * 0.39,
+      height * (0.42 + Math.sin(phase * 1.35) * 0.3),
+      Math.sin(phase) * height * 0.39,
+    );
   }
 }
 export function createAura(texture: THREE.Texture, shiny: THREE.Texture) {

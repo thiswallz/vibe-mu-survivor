@@ -183,3 +183,10 @@ export function chooseDropSlots(_hero: HeroId, equipment?: Equipment, random = M
     ...occupied,
   ];
 }
+
+export function hasEnhancedArmorSet(equipment: Equipment, minimum = 13) {
+  return SLOTS.filter((slot) => slot !== 'weapon').every((slot) => {
+    const item = equipment[slot];
+    return !!item && item.enhancement >= minimum;
+  });
+}

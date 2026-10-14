@@ -21,6 +21,7 @@ import type {
 } from '@mu-survivor/models';
 import { createInventoryPanel } from './inventory-panel.js';
 import {
+  hasEnhancedArmorSet,
   itemName,
   itemColor,
   SLOTS,
@@ -32,13 +33,14 @@ import {
 } from '@mu-survivor/game/equipment';
 import { GameAudio, MONSTER_AUDIO } from './audio.js';
 import { ITEMS, mergeInventory, openKundun } from '@mu-survivor/game/loot';
-import { readInventory, readProfile, saveRunInventory, bankRun } from './inventory.js';
+import { readInventory, readProfile, saveProfile, saveRunInventory, bankRun } from './inventory.js';
 import {
   prepareActor,
   disposeActor,
   flashActor,
   enhanceArmor,
   updateArmor,
+  createArmorSetAura,
   createAura,
   updateAura,
 } from './appearance.js';
@@ -364,6 +366,11 @@ function equippedActor(id: HeroId, equipment: Equipment, height: number) {
     shinyTexture,
     equipment,
   );
+  if (hasEnhancedArmorSet(equipment)) {
+    const setAura = createArmorSetAura(shinyTexture, height);
+    root.add(setAura);
+    root.userData.armorSetAura = setAura;
+  }
   return root;
 }
 function refreshAppearance() {
@@ -639,6 +646,20 @@ function refreshStash() {
   $('stash').textContent = 'INVENTORY · ' + readInventory().reduce((n, i) => n + i.quantity, 0);
 }
 $('stash').onclick = openInventory;
+if (
+  ['localhost', '127.0.0.1'].includes(location.hostname) &&
+  new URLSearchParams(location.search).get('testSet13') === '1'
+) {
+  const profile = readProfile();
+  for (const hero of CLASSES)
+    for (const slot of SLOTS.filter((slot) => slot !== 'weapon')) {
+      const id = `${hero.id}-${slot}`;
+      if (!profile.items.some((item) => item.id === id && item.enhancement === 13))
+        profile.items.push({ id, enhancement: 13, quantity: 1 });
+    }
+  saveProfile(profile);
+  history.replaceState(null, '', location.pathname);
+}
 refreshStash();
 $('fullscreen').onclick = () => {
   if (document.fullscreenElement) document.exitFullscreen();
@@ -1237,6 +1258,7 @@ function animate(ms: number) {
         m.rotation.y = Math.sin(t * 0.35) * 0.14 - 0.2;
         m.position.y = heightAt(m.position.x, m.position.z);
         setPose(m, 'idle', t);
+        updateArmor(m, t);
         m.scale.setScalar(h.id === selected ? 1 : 0.9);
       }
     }

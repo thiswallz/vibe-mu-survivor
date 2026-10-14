@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createRun, spawnEnemy, tick } from '../packages/game/dist/index.js';
 import {
+  hasEnhancedArmorSet,
   equipItem,
   autoEquip,
   unequipSlot,
@@ -131,4 +132,17 @@ test('equipment transfers conserve copies and keep the bag separate through save
     s.inventory.reduce((sum, item) => sum + item.quantity, 0),
     3,
   );
+});
+
+test('full +13 armor aura requires all five armor slots and ignores weapon', () => {
+  const s = createRun('knight');
+  for (const slot of SLOTS.filter((slot) => slot !== 'weapon'))
+    s.equipment[slot] = { id: `knight-${slot}`, enhancement: 13 };
+  assert.equal(hasEnhancedArmorSet(s.equipment), true);
+  s.equipment.weapon = { id: 'knight-weapon', enhancement: 0 };
+  assert.equal(hasEnhancedArmorSet(s.equipment), true);
+  s.equipment.boots.enhancement = 12;
+  assert.equal(hasEnhancedArmorSet(s.equipment), false);
+  s.equipment.boots = null;
+  assert.equal(hasEnhancedArmorSet(s.equipment), false);
 });
