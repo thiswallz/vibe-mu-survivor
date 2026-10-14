@@ -53,11 +53,11 @@
   },
   "bull": {
     "source": [
-      "Monster/Monster04.bmd"
+      "Monster/Monster01.bmd"
     ],
     "file": "assets/models/bull.json",
-    "triangles": 788,
-    "height": 2.05489
+    "triangles": 680,
+    "height": 2.16047
   },
   "hound": {
     "source": [
@@ -870,5 +870,45 @@
     "file": "assets/models/elf-armor.json",
     "triangles": 840,
     "height": 1.98247
+  },
+  "loot-kundun-box": {
+    "source": [
+      "Item/MagicBox01.bmd"
+    ],
+    "file": "assets/models/loot-kundun-box.json",
+    "triangles": 44,
+    "height": 0.26034
+  },
+  "loot-jewel-bless": {
+    "source": [
+      "Item/Jewel01.bmd"
+    ],
+    "file": "assets/models/loot-jewel-bless.json",
+    "triangles": 12,
+    "height": 0.24963999999999997
+  },
+  "loot-jewel-soul": {
+    "source": [
+      "Item/Jewel02.bmd"
+    ],
+    "file": "assets/models/loot-jewel-soul.json",
+    "triangles": 22,
+    "height": 0.21903
+  },
+  "loot-jewel-life": {
+    "source": [
+      "Item/Jewel03.bmd"
+    ],
+    "file": "assets/models/loot-jewel-life.json",
+    "triangles": 44,
+    "height": 0.26706
+  },
+  "loot-jewel-chaos": {
+    "source": [
+      "Item/Jewel15.bmd"
+    ],
+    "file": "assets/models/loot-jewel-chaos.json",
+    "triangles": 32,
+    "height": 0.33155999999999997
   }
 }
