@@ -8,7 +8,7 @@ export const SKILLS={
  wizard:[{id:'evil',name:'Evil Spirits',description:'Seeking spirits attack three targets.',icon:9,sound:'evil',range:17,cooldown:1.2,damage:.85},{id:'hellfire',name:'Hellfire',description:'Burn every enemy around you.',icon:10,sound:'hellfire',range:6.5,cooldown:2.5,damage:2.2}],
  elf:[{id:'multishot',name:'Multiple Shot',description:'Fire multiple seeking arrows.',icon:24,sound:'elf',range:20,cooldown:1,damage:1},{id:'icearrow',name:'Ice Arrow',description:'A powerful arrow slows its target.',icon:51,sound:'ice',range:20,cooldown:1.5,damage:1.8}]
 };
-export function setSkill(s,id){if(!['playing','paused'].includes(s.phase))return false;if(!SKILLS[s.hero.id].some(skill=>skill.id===id))return false;s.skill=id;s.attackTimer=Math.max(s.attackTimer,.15);return true;}
+export function setSkill(s,id){if(!['playing','paused'].includes(s.phase))return false;if(!s.unlockedSkills.includes(id)||!SKILLS[s.hero.id].some(skill=>skill.id===id))return false;s.skill=id;s.attackTimer=Math.max(s.attackTimer,.15);return true;}
 export const ENEMIES = [
  { id:'spider', name:'Spider', hp:28, speed:2.6, damage:8, size:0.95, xp:3, color:'#a39967' },
  { id:'budge', name:'Budge Dragon', hp:45, speed:3.5, damage:10, size:1.25, xp:5, color:'#be9863' },
@@ -16,7 +16,8 @@ export const ENEMIES = [
  { id:'hound', name:'Hound', hp:60, speed:4.2, damage:12, size:1.45, xp:6, color:'#9a8584' },
  { id:'giant', name:'Giant', hp:170, speed:1.7, damage:22, size:2.9, xp:15, color:'#a9a588' }
 ];
-export const DURATION=300, ARENA=29;
+export const DURATION=300, ARENA=29, MAX_ENEMIES=180;
+export const ARMOR={knight:{name:'Dark Phoenix',model:'knight-armor'},wizard:{name:'Grand Soul',model:'wizard-armor'},elf:{name:'Guardian',model:'elf-armor'}};
 export const UPGRADES=[
  {id:'damage', icon:'✦', name:'Greater power', text:'All attacks deal 25% more damage.', apply:s=>s.damage*=1.25},
  {id:'haste', icon:'ϟ', name:'Spell haste', text:'Attack 15% faster.', apply:s=>s.cooldown=Math.max(.18,s.cooldown*.85)},
@@ -25,6 +26,16 @@ export const UPGRADES=[
  {id:'vitality', icon:'♡', name:'Blessing of life', text:'Gain 30 maximum health and restore 50.', apply:s=>{s.maxHp+=30;s.hp=Math.min(s.maxHp,s.hp+50)}},
  {id:'multishot', icon:'⋔', name:'Echoing strike', text:'Add a projectile or widen your slash.', apply:s=>{s.projectiles++;s.slashRange+=.5}}
 ];
+export function rewardOptions(s){
+ const rewards=[];
+ if(s.level>=2&&!s.unlockedSkills.includes(SKILLS[s.hero.id][1].id))rewards.push({id:'unlock-skill',icon:'✦',name:'Learn '+SKILLS[s.hero.id][1].name,text:'Unlock a new skill and equip it. Switch with 1 / 2.',apply:s=>{s.unlockedSkills.push(SKILLS[s.hero.id][1].id);s.skill=SKILLS[s.hero.id][1].id;}});
+ if(s.level>=3&&s.auraLevel<2)rewards.push({id:'aura',icon:'◉',name:s.auraLevel?'Greater aura':'Aura of protection',text:'Orbiting energy damages nearby enemies and protects you.',apply:s=>{s.auraLevel++;}});
+ if(s.level>=4&&!s.armorEquipped)rewards.push({id:'armor',icon:'♜',name:ARMOR[s.hero.id].name+' armor',text:'Equip a new MU armor set. +35 health, 18% damage reduction.',apply:s=>{s.armorEquipped=true;s.maxHp+=35;s.hp=Math.min(s.maxHp,s.hp+35);}});
+ if(s.level>=5&&s.enhancement<13)rewards.push({id:'enhance13',icon:'✧',name:'Armor +13',text:'Golden chrome armor shine. +15% power and extra protection.',apply:s=>{s.enhancement=13;s.damage*=1.15;}});
+ if(s.level>=8&&s.enhancement===13)rewards.push({id:'enhance15',icon:'✧',name:'Armor +15',text:'Brilliant armor shine. +20% power and stronger protection.',apply:s=>{s.enhancement=15;s.damage*=1.2;}});
+ return rewards;
+}
+export function upgradeDefinition(s,id){return [...UPGRADES,...rewardOptions(s)].find(u=>u.id===id);}
 const dist=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
 export function positionClear(x,z,obstacles=[],radius=.42){return !obstacles.some(o=>x>o.minX-radius&&x<o.maxX+radius&&z>o.minZ-radius&&z<o.maxZ+radius);}
 export function moveEntity(entity,dx,dz,obstacles=[],radius=.42){
@@ -36,37 +47,41 @@ export function moveEntity(entity,dx,dz,obstacles=[],radius=.42){
 }
 export function createRun(id,random=Math.random){
  const hero=CLASSES.find(c=>c.id===id); if(!hero)throw new Error('Unknown class');
- return {hero,random,skill:SKILLS[id][0].id,moving:false,walking:false,travel:0,obstacles:[],attackAnimation:0,phase:'playing',time:0,wave:1,hp:hero.hp,maxHp:hero.hp,speed:hero.speed,damage:hero.damage,cooldown:hero.cooldown,slashRange:hero.range,projectiles:id==='elf'?2:1,magnet:3.1,x:0,z:0,facing:0,enemies:[],shots:[],gems:[],events:[],kills:0,level:1,xp:0,xpNeeded:12,spawnTimer:.8,attackTimer:0,dashCooldown:0,dashTime:0,invulnerable:0,bossSpawned:false,bossDefeated:false,nextId:1,choices:[],pendingLevels:0};
+ return {hero,random,skill:SKILLS[id][0].id,unlockedSkills:[SKILLS[id][0].id],auraLevel:0,auraTimer:0,armorEquipped:false,enhancement:0,hitFlash:0,lastSurgeWave:0,moving:false,walking:false,travel:0,obstacles:[],attackAnimation:0,phase:'playing',time:0,wave:1,hp:hero.hp,maxHp:hero.hp,speed:hero.speed,damage:hero.damage,cooldown:hero.cooldown,slashRange:hero.range,projectiles:id==='elf'?2:1,magnet:3.1,x:0,z:0,facing:0,enemies:[],shots:[],gems:[],events:[],kills:0,level:1,xp:0,xpNeeded:12,spawnTimer:.8,attackTimer:0,dashCooldown:0,dashTime:0,invulnerable:0,bossSpawned:false,bossDefeated:false,nextId:1,choices:[],pendingLevels:0};
 }
 function event(s,type,data={}){s.events.push({type,...data})}
 export function spawnEnemy(s,type,elite=false){
- const a=s.random()*Math.PI*2,r=19+s.random()*5;
+ const a=s.random()*Math.PI*2,r=12+s.random()*6;
  const def=ENEMIES[type]; const scale=1+(s.wave-1)*.095;
  const e={...def,uid:s.nextId++,type,x:Math.max(-ARENA+1,Math.min(ARENA-1,s.x+Math.cos(a)*r)),z:Math.max(-ARENA+1,Math.min(ARENA-1,s.z+Math.sin(a)*r)),hp:def.hp*scale*(elite?12:1),maxHp:def.hp*scale*(elite?12:1),elite,hit:0};
  if(elite){e.size=4.5;e.speed=2;e.damage=28;e.name='Lorencia Guardian';}
  if(!positionClear(e.x,e.z,s.obstacles,e.size*.24)){for(let i=0;i<24;i++){const a=i*Math.PI*2/24;e.x=Math.max(-ARENA+1,Math.min(ARENA-1,s.x+Math.sin(a)*r));e.z=Math.max(-ARENA+1,Math.min(ARENA-1,s.z+Math.cos(a)*r));if(positionClear(e.x,e.z,s.obstacles,e.size*.24))break;}if(!positionClear(e.x,e.z,s.obstacles,e.size*.24))return null;}s.enemies.push(e);return e;
 }
 function hurt(s,e,damage){
- if(e.hp<=0)return;e.hp-=damage;e.hit=.16;event(s,'hit',{x:e.x,z:e.z,damage});
- if(e.hp<=0){s.kills++;s.gems.push({uid:s.nextId++,x:e.x,z:e.z,xp:e.elite?60:e.xp});event(s,'death',{x:e.x,z:e.z,color:e.color});if(e.elite)s.bossDefeated=true;}
+ if(e.hp<=0)return;e.hp-=damage;const away=dist(e,s)||1;moveEntity(e,(e.x-s.x)/away*.1,(e.z-s.z)/away*.1,s.obstacles,e.size*.24);e.hit=.16;event(s,'hit',{uid:e.uid,id:e.id,x:e.x,z:e.z,size:e.size,damage});
+ if(e.hp<=0){s.kills++;s.gems.push({uid:s.nextId++,x:e.x,z:e.z,xp:e.elite?60:e.xp});event(s,'death',{uid:e.uid,id:e.id,x:e.x,z:e.z,size:e.size,color:e.color,facing:Math.atan2(s.x-e.x,s.z-e.z)});if(e.elite)s.bossDefeated=true;}
 }
 function levelUp(s){
- s.phase='upgrade';s.choices=[...UPGRADES].sort(()=>s.random()-.5).slice(0,3).map(u=>u.id);event(s,'level');
+ s.phase='upgrade';const special=rewardOptions(s);let featured=special.find(u=>u.id==='unlock-skill'&&s.level%2===0)||special.find(u=>u.id==='armor')||special.find(u=>u.id==='enhance15')||special.find(u=>u.id==='enhance13')||special[0];const basics=[...UPGRADES].sort(()=>s.random()-.5).slice(0,featured?2:3);s.choices=[...(featured?[featured]:[]),...basics].map(u=>u.id);event(s,'level');
 }
 export function chooseUpgrade(s,id){
  if(s.phase!=='upgrade'||!s.choices.includes(id))return false;
- UPGRADES.find(u=>u.id===id).apply(s);s.choices=[];s.pendingLevels--;
+ s.events=[];upgradeDefinition(s,id).apply(s);event(s,'reward',{id});s.choices=[];s.pendingLevels--;
  if(s.pendingLevels>0)levelUp(s);else s.phase='playing';return true;
 }
 export function tick(s,dt,input={}){
  s.events=[];if(s.phase!=='playing')return;s.time+=dt;s.wave=Math.min(10,1+Math.floor(s.time/30));
- s.attackAnimation=Math.max(0,s.attackAnimation-dt);s.invulnerable=Math.max(0,s.invulnerable-dt);s.dashCooldown=Math.max(0,s.dashCooldown-dt);s.dashTime=Math.max(0,s.dashTime-dt);
+ s.hitFlash=Math.max(0,s.hitFlash-dt);s.attackAnimation=Math.max(0,s.attackAnimation-dt);s.invulnerable=Math.max(0,s.invulnerable-dt);s.dashCooldown=Math.max(0,s.dashCooldown-dt);s.dashTime=Math.max(0,s.dashTime-dt);
  let mx=input.x||0,mz=input.z||0,len=Math.hypot(mx,mz);if(len>1){mx/=len;mz/=len}
  if(input.dash&&s.dashCooldown===0&&len>0){s.dashTime=.2;s.dashCooldown=3;s.invulnerable=.35;event(s,'dash')}
  s.moving=len>.01;s.walking=!!input.walk||len<.5;const speed=s.speed*(s.dashTime>0?3:s.walking?.65:1);const dx=Math.max(-ARENA,Math.min(ARENA,s.x+mx*speed*dt))-s.x,dz=Math.max(-ARENA,Math.min(ARENA,s.z+mz*speed*dt))-s.z;const moved=moveEntity(s,dx,dz,s.obstacles);s.travel+=moved;s.moving=moved>.0001;if(len>.01)s.facing=Math.atan2(mx,mz);
  s.spawnTimer-=dt;
- if(s.spawnTimer<=0&&s.enemies.length<120){
-  const unlocked=Math.min(5,1+Math.floor((s.wave-1)/2));spawnEnemy(s,Math.floor(s.random()*unlocked));s.spawnTimer=Math.max(.22,.95-s.wave*.073);
+ const surge=s.time%30>=22;
+ if(surge&&s.lastSurgeWave!==s.wave){s.lastSurgeWave=s.wave;event(s,'surge',{wave:s.wave});}
+ if(s.spawnTimer<=0&&s.enemies.length<MAX_ENEMIES-1){
+  const unlocked=Math.min(5,1+Math.floor((s.wave-1)/2));const pack=s.time<1.5?6:surge?5+s.wave:2+Math.floor((s.wave-1)/3);
+  for(let i=0;i<pack&&s.enemies.length<MAX_ENEMIES-1;i++)spawnEnemy(s,Math.floor(s.random()*unlocked));
+  s.spawnTimer=Math.max(.24,.9-s.wave*.035)*(surge?.52:1);
  }
  if(s.time>=270&&!s.bossSpawned){const guardian=spawnEnemy(s,4,true);if(guardian){s.bossSpawned=true;event(s,'boss')}}
  s.attackTimer-=dt;
@@ -75,8 +90,8 @@ export function tick(s,dt,input={}){
   const nearest=[...living].sort((a,b)=>dist(a,s)-dist(b,s));
   const skill=SKILLS[s.hero.id].find(k=>k.id===s.skill);const range=skill.id==='slash'?s.slashRange:skill.range;
   if(dist(nearest[0],s)<range){
-   s.attackTimer=s.cooldown*skill.cooldown;s.attackAnimation=.45;s.animationSkill=skill.id;
-   if(!s.moving)s.facing=Math.atan2(nearest[0].x-s.x,nearest[0].z-s.z);
+   s.attackTimer=s.cooldown*skill.cooldown;s.attackAnimation=.6;s.animationSkill=skill.id;
+   s.attackFacing=Math.atan2(nearest[0].x-s.x,nearest[0].z-s.z);if(!s.moving)s.facing=Math.atan2(nearest[0].x-s.x,nearest[0].z-s.z);
    event(s,'attack',{hero:s.hero.id,skill:skill.id,x:s.x,z:s.z,facing:Math.atan2(nearest[0].x-s.x,nearest[0].z-s.z),range});
    const damage=s.damage*skill.damage;
    if(skill.id==='slash'||skill.id==='hellfire'){for(const e of living)if(dist(e,s)<range+e.size*.2)hurt(s,e,damage);}
@@ -91,6 +106,7 @@ export function tick(s,dt,input={}){
    }
   }
  }
+ s.auraTimer-=dt;if(s.auraLevel&&s.auraTimer<=0){s.auraTimer=.9;for(const e of s.enemies)if(dist(e,s)<4.2)hurt(s,e,12*s.auraLevel+s.damage*.18);event(s,'aura-pulse',{x:s.x,z:s.z});}
  for(const p of s.shots){
   p.life-=dt;const target=s.enemies.find(e=>e.uid===p.target&&e.hp>0);if(!target){p.life=0;continue}
   const d=dist(p,target);if(d<p.speed*dt+.45){
@@ -101,8 +117,8 @@ export function tick(s,dt,input={}){
  s.shots=s.shots.filter(p=>p.life>0);
  for(const e of s.enemies){
   if(e.hp<=0)continue;e.slow=Math.max(0,(e.slow||0)-dt);e.hit=Math.max(0,e.hit-dt);const d=dist(e,s);
-  if(d>.65){const step=e.speed*(e.slow>0?.45:1)*dt,dx=(s.x-e.x)/d*step,dz=(s.z-e.z)/d*step;const moved=moveEntity(e,dx,dz,s.obstacles,e.size*.24);if(moved<step*.2){for(const angle of [.65,-.65,1.2,-1.2,Math.PI/2,-Math.PI/2]){const nx=dx*Math.cos(angle)-dz*Math.sin(angle),nz=dx*Math.sin(angle)+dz*Math.cos(angle);if(moveEntity(e,nx,nz,s.obstacles,e.size*.24)>step*.2)break;}}}
-  if(d<.6+e.size*.27&&s.invulnerable===0){s.hp=Math.max(0,s.hp-e.damage);s.invulnerable=.7;event(s,'hurt');}
+  if(d>.65){const step=e.speed*(e.slow>0?.45:1)*(e.hit>0?.3:1)*dt,dx=(s.x-e.x)/d*step,dz=(s.z-e.z)/d*step;const moved=moveEntity(e,dx,dz,s.obstacles,e.size*.24);if(moved<step*.2){for(const angle of [.65,-.65,1.2,-1.2,Math.PI/2,-Math.PI/2]){const nx=dx*Math.cos(angle)-dz*Math.sin(angle),nz=dx*Math.sin(angle)+dz*Math.cos(angle);if(moveEntity(e,nx,nz,s.obstacles,e.size*.24)>step*.2)break;}}}
+  if(d<.6+e.size*.27&&s.invulnerable===0){const reduction=(s.armorEquipped?.18:0)+(s.enhancement===15?.2:s.enhancement===13?.1:0)+(s.auraLevel?.06:0);s.hp=Math.max(0,s.hp-e.damage*(1-reduction));s.invulnerable=.7;s.hitFlash=.32;event(s,'hurt',{damage:e.damage*(1-reduction),x:s.x,z:s.z});}
  }
  s.enemies=s.enemies.filter(e=>e.hp>0);
  for(const g of s.gems){const d=dist(g,s);if(d<s.magnet){const move=Math.min(d,dt*14);g.x+=(s.x-g.x)/(d||1)*move;g.z+=(s.z-g.z)/(d||1)*move;}if(d<.7){s.xp+=g.xp;g.collected=true}}

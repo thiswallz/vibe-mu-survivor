@@ -85,12 +85,12 @@ def convert(key,paths,animate=False,playerRig=None):
  if playerRig:
   rig,rigActions=playerRig
   # S20 action layout, verified by alternating foot motion. Older 15/25 indices are idle poses here.
-  indices={"knight":(4,53,60,4,4),"wizard":(10,56,64,10,10),"elf":(8,55,62,8,8)}[key]
-  for label,action,count in zip(["idle","walk","run","attack","attack2"],indices,[8,16,16,8,8]):
+  indices={"knight":(4,53,60,136,147),"wizard":(10,56,64,149,148),"elf":(8,55,62,122,122)}[key.split("-")[0]]
+  for label,action,count in zip(["idle","walk","run","attack","attack2"],indices,[8,16,16,16,16]):
    clips[label]={"start":len(matsForClips),"count":count,"fps":count*(.65 if label=="idle" else 1.15 if label=="walk" else 1.7),"sourceAction":action}
    for i in range(count):
     mats=matrices(rig,action,i*(rigActions[action]-1)/count)
-    if label in ['walk','run']:
+    if label in ['walk','run','attack','attack2']:
      # Simulation supplies world movement; remove animated root translation in the ground plane.
      root=mats[0][:2,3].copy()
      for m in mats:m[:2,3]-=root
@@ -112,6 +112,7 @@ def convert(key,paths,animate=False,playerRig=None):
      for idx,m in enumerate(frames):morph[idx].extend(transform(vv[vi[k]],m))
    if positions:
     part={'positions':positions,'uvs':uvs,'texture':texture(path.parent,tex)}
+    if playerRig:part['upperBody']=sum(v[0]>=17 for v in vv)>len(vv)/2
     if morph:part['frames']=morph
     parts.append(part);bounds.extend(np.array(positions).reshape(-1,3).tolist())
  a=np.array(bounds);minimum=a.min(axis=0);maximum=a.max(axis=0)

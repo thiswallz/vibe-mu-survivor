@@ -1,7 +1,8 @@
+import {prepareActor,disposeActor,flashActor,enhanceArmor,createAura,updateAura} from './appearance.js';
 import {SpellEffects} from './effects.js';
 import {keepArenaProp,solidArenaProp} from './scene-layout.js';
 import * as THREE from './vendor/three.module.js';
-import {CLASSES,ENEMIES,SKILLS,UPGRADES,createRun,tick,chooseUpgrade,setSkill,positionClear,DURATION,ARENA} from './shared/game.js';
+import {CLASSES,ENEMIES,SKILLS,UPGRADES,ARMOR,upgradeDefinition,createRun,tick,chooseUpgrade,setSkill,positionClear,DURATION,ARENA} from './shared/game.js';
 const $=id=>document.getElementById(id);
 const icons={knight:'⚔',wizard:'✦',elf:'➶'};
 let selected='knight',run=null,ready=false,muted=false,last=0,accumulator=0,toastTimer=0,dashRequested=false;
@@ -15,7 +16,7 @@ const camera=new THREE.PerspectiveCamera(43,innerWidth/innerHeight,.1,180);
 scene.add(new THREE.HemisphereLight('#c8dcc8','#243434',2.25));
 const sun=new THREE.DirectionalLight('#f0d4ad',3.1);sun.position.set(-12,22,14);scene.add(sun);
 const blue=new THREE.DirectionalLight('#73b2c8',1.4);blue.position.set(12,9,-20);scene.add(blue);
-let terrainData,objectData;const scenery=[],obstacles=[];
+let chromeTexture,auraTexture,shinyTexture;let terrainData,objectData;const scenery=[],obstacles=[];
 const assets={},textures={},loader=new THREE.TextureLoader();
 async function loadTexture(url){if(!textures[url])textures[url]=loader.loadAsync(url).then(t=>{t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy());return t;});return textures[url];}
 async function loadModel(name){
@@ -26,7 +27,7 @@ async function loadModel(name){
   const map=part.texture?await loadTexture(part.texture):null;
   const mat=new THREE.MeshStandardMaterial({map,color:map?'#ffffff':'#b3aaa0',roughness:.83,metalness:.12,side:THREE.DoubleSide,alphaTest:.45});
   const terrainObject=Number(name.split('-')[1]);if(name.startsWith('lorencia-')&&terrainObject<=27&&map){mat.alphaMap=map;mat.alphaTest=.12;}if(name.startsWith('lorencia-')&&[50,51].includes(terrainObject)){mat.transparent=true;mat.blending=THREE.AdditiveBlending;mat.depthWrite=false;mat.alphaTest=0;mat.emissiveMap=map;mat.emissive.set('#ffffff');mat.emissiveIntensity=.8;}
-  if(name.startsWith('skill-')){mat.transparent=true;mat.blending=THREE.AdditiveBlending;mat.depthWrite=false;mat.alphaTest=0;mat.emissive.set('#666666');mat.emissiveMap=map;mat.emissiveIntensity=1.2;}const mesh=new THREE.Mesh(g,mat);template.add(mesh);
+  if(name.startsWith('skill-')){mat.transparent=true;mat.blending=THREE.AdditiveBlending;mat.depthWrite=false;mat.alphaTest=0;mat.emissive.set('#666666');mat.emissiveMap=map;mat.emissiveIntensity=1.2;}const mesh=new THREE.Mesh(g,mat);mesh.userData.upperBody=!!part.upperBody;mesh.userData.armor=!/(skin|hair|hide)/i.test(part.texture||'');template.add(mesh);
  }
  assets[name]={template,data};
 }
@@ -52,6 +53,16 @@ function setPose(root,clipName,seconds,loop=true,dt=1/60){
  const weights=root.userData.poseWeights||=new Float32Array(data.parts[0].frames.length);const smoothing=1-Math.exp(-dt*22);for(let i=0;i<weights.length;i++){const desired=(i===a?1-blend:0)+(i===b?blend:0);weights[i]+=(desired-weights[i])*smoothing;}root.userData.body.traverse(child=>{if(child.morphTargetInfluences)for(let i=0;i<weights.length;i++)child.morphTargetInfluences[i]=weights[i];});
  const socket=data.sockets?.[root.userData.socket];if(socket&&root.userData.weapon){poseMatrix.fromArray(socket[a]).decompose(posePos,poseQ,poseScale);poseMatrix2.fromArray(socket[b]).decompose(posePos2,poseQ2,poseScale);posePos.lerp(posePos2,blend);poseQ.slerp(poseQ2,blend);root.userData.weapon.position.lerp(posePos,1-Math.exp(-dt*22));root.userData.weapon.quaternion.slerp(poseQ,1-Math.exp(-dt*22));}
 }
+function attackPose(root,clipName,elapsed,duration,moving,dt){
+ const data=assets[root.userData.model].data,clip=data.clips[clipName];const p=Math.min(1,Math.max(0,elapsed/duration)),v=p*(clip.count-1),index=Math.floor(v),blend=v-index,a=clip.start+index,b=clip.start+Math.min(index+1,clip.count-1),strength=Math.sin(Math.PI*p)**.35;
+ root.userData.body.traverse(mesh=>{if(!mesh.morphTargetInfluences||moving&&!mesh.userData.upperBody&&root.userData.model.startsWith('knight')===false)return;for(let i=0;i<mesh.morphTargetInfluences.length;i++){const attack=(i===a?1-blend:0)+(i===b?blend:0);mesh.morphTargetInfluences[i]=mesh.morphTargetInfluences[i]*(1-strength)+attack*strength;}});
+ const sockets=data.sockets[root.userData.socket];poseMatrix.fromArray(sockets[a]).decompose(posePos,poseQ,poseScale);poseMatrix2.fromArray(sockets[b]).decompose(posePos2,poseQ2,poseScale);posePos.lerp(posePos2,blend);poseQ.slerp(poseQ2,blend);root.userData.weapon.position.lerp(posePos,strength*(1-Math.exp(-dt*32)));root.userData.weapon.quaternion.slerp(poseQ,strength*(1-Math.exp(-dt*32)));
+}
+let appearanceKey='';
+function refreshAppearance(){
+ const key=run.hero.id+(run.armorEquipped?'-armor':'')+':'+run.enhancement;if(key===appearanceKey)return;appearanceKey=key;
+ if(heroModel){playGroup.remove(heroModel);disposeActor(heroModel);}heroModel=model(run.hero.id+(run.armorEquipped?'-armor':''),2.4);weapon(heroModel,run.hero.id);addShadow(heroModel,1);prepareActor(heroModel);enhanceArmor(heroModel,run.enhancement,chromeTexture);playGroup.add(heroModel);
+}
 function heightAt(x,z){
  if(!terrainData)return 0;const size=terrainData.size,spacing=terrainData.spacing;const tx=Math.max(0,Math.min(size-.001,(x+size*spacing/2)/spacing)),ty=Math.max(0,Math.min(size-.001,(size*spacing/2-z)/spacing));const ix=Math.floor(tx),iy=Math.floor(ty),fx=tx-ix,fy=ty-iy,h=terrainData.heights;
  const a=h[iy*(size+1)+ix]*(1-fx)+h[iy*(size+1)+ix+1]*fx,b=h[(iy+1)*(size+1)+ix]*(1-fx)+h[(iy+1)*(size+1)+ix+1]*fx;return a*(1-fy)+b*fy;
@@ -76,8 +87,9 @@ async function world(){
  }
 }
 const music=new Audio('assets/audio/lorencia-pub.mp3');music.loop=true;music.volume=.24;
-const sounds={};for(const id of ['knight','wizard','elf','level-up','evil','hellfire','ice','stab'])sounds[id]=Array.from({length:3},()=>{const a=new Audio(`assets/audio/${id}.wav`);a.volume=id==='level-up'?.4:.16;return a;});
-function effect(id){if(muted)return;const pool=sounds[id];const a=pool.find(a=>a.paused)||pool[0];a.currentTime=0;a.play().catch(()=>{});}
+const sounds={};for(const id of ['knight','wizard','elf','level-up','evil','hellfire','ice','stab','death-spider','death-budge','death-bull','death-hound','death-giant','hurt-knight','hurt-wizard','hurt-elf','hit','armor'])sounds[id]=Array.from({length:3},()=>{const a=new Audio(`assets/audio/${id}.wav`);a.volume=id==='level-up'?.4:.16;return a;});
+const soundTimes=new Map();
+function effect(id){if(muted)return;const now=performance.now();if((id.startsWith('death-')||id==='hit')&&now-(soundTimes.get(id)||-1000)<120)return;soundTimes.set(id,now);const pool=sounds[id];const a=pool.find(a=>a.paused)||pool[0];a.currentTime=0;a.play().catch(()=>{});}
 function startMusic(){if(!muted)music.play().catch(()=>{});}
 $('sound').onclick=()=>{muted=!muted;music.muted=muted;for(const pool of Object.values(sounds))for(const a of pool)a.muted=muted;$('sound').textContent=muted?'♪ SOUND OFF':'♪ SOUND ON';$('sound').setAttribute('aria-label',muted?'Unmute audio':'Mute audio');startMusic()};
 $('fullscreen').onclick=()=>{if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen?.().catch(()=>{});};
@@ -87,10 +99,10 @@ function cards(){
 }
 cards();
 const spellEffects=new SpellEffects(playGroup,heightAt);
-const enemies=new Map(),shots=new Map(),gems=new Map();let aura=null;
-function clearPlay(){spellEffects.clear();for(const shot of shots.values())spellEffects.disposeProjectile(shot);for(const child of [...playGroup.children])playGroup.remove(child);enemies.clear();shots.clear();gems.clear();}
+const enemies=new Map(),shots=new Map(),gems=new Map();let aura=null,protectionAura=null;
+function clearPlay(){appearanceKey='';spellEffects.clear();if(heroModel)disposeActor(heroModel);for(const enemy of enemies.values())disposeActor(enemy);for(const shot of shots.values())spellEffects.disposeProjectile(shot);for(const child of [...playGroup.children])playGroup.remove(child);enemies.clear();shots.clear();gems.clear();}
 function start(){
- if(!ready)return;clearPlay();run=createRun(selected);run.obstacles=obstacles;run.x=10;for(let i=0;!positionClear(run.x,run.z,obstacles)&&i<60;i++){run.x=10+Math.cos(i*.8)*i*.2;run.z=Math.sin(i*.8)*i*.2;}heroModel=model(selected,2.4);weapon(heroModel,selected);addShadow(heroModel,1);playGroup.add(heroModel);aura=ring(1.05,run.hero.color);aura.position.y=.05;playGroup.add(aura);menuGroup.visible=false;playGroup.visible=true;$('menu').hidden=true;$('hud').hidden=false;$('overlay').hidden=true;document.body.classList.add('playing');keys.clear();stick.x=stick.z=0;pointer.active=false;camera.position.set(0,22,20);camera.lookAt(0,0,0);$('hero-name').textContent=run.hero.name.toUpperCase();$('skill-name').textContent=run.hero.skill;$('skill-icon').textContent=icons[selected];skillButtons();startMusic();toast('The gates have fallen. Survive.');
+ if(!ready)return;clearPlay();run=createRun(selected);run.obstacles=obstacles;run.x=10;for(let i=0;!positionClear(run.x,run.z,obstacles)&&i<60;i++){run.x=10+Math.cos(i*.8)*i*.2;run.z=Math.sin(i*.8)*i*.2;}heroModel=null;refreshAppearance();protectionAura=createAura(auraTexture,shinyTexture);playGroup.add(protectionAura);aura=ring(1.05,run.hero.color);aura.position.y=.05;playGroup.add(aura);menuGroup.visible=false;playGroup.visible=true;$('menu').hidden=true;$('hud').hidden=false;$('overlay').hidden=true;document.body.classList.add('playing');keys.clear();stick.x=stick.z=0;pointer.active=false;camera.position.set(0,22,20);camera.lookAt(0,0,0);$('hero-name').textContent=run.hero.name.toUpperCase();$('skill-name').textContent=run.hero.skill;$('skill-icon').textContent=icons[selected];skillButtons();startMusic();toast('The gates have fallen. Survive.');
 }
 $('begin').onclick=start;
 function goMenu(){run=null;clearPlay();menuGroup.visible=true;playGroup.visible=false;$('menu').hidden=false;$('hud').hidden=true;$('overlay').hidden=true;document.body.classList.remove('playing');keys.clear();stick.x=stick.z=0;pointer.active=false;}
@@ -100,8 +112,8 @@ let lastPhase='',lastWave=1;
 function modal(){
  if(!run)return;const s=run;const show=['upgrade','paused','dead','won'].includes(s.phase);$('overlay').hidden=!show;if(!show)return;
  if(s.phase==='upgrade'){
-  $('modal').innerHTML=`<span class="eyebrow">LEVEL ${s.level} · A JEWEL OF BLESSING</span><h2>Power answers the call.</h2><p>Choose one blessing for the battle ahead.</p><div class="upgrade-options">${s.choices.map(id=>{const u=UPGRADES.find(u=>u.id===id);return `<button class="upgrade" data-upgrade="${id}"><span>${u.icon}</span><b>${u.name}</b><p>${u.text}</p></button>`}).join('')}</div>`;
-  for(const el of document.querySelectorAll('[data-upgrade]'))el.onclick=()=>{chooseUpgrade(s,el.dataset.upgrade);lastPhase='';modal()};
+  $('modal').innerHTML=`<span class="eyebrow">LEVEL ${s.level} · A JEWEL OF BLESSING</span><h2>Power answers the call.</h2><p>Choose one blessing for the battle ahead.</p><div class="upgrade-options">${s.choices.map(id=>{const u=upgradeDefinition(s,id);return `<button class="upgrade" data-upgrade="${id}"><span>${u.icon}</span><b>${u.name}</b><p>${u.text}</p></button>`}).join('')}</div>`;
+  for(const el of document.querySelectorAll('[data-upgrade]'))el.onclick=()=>{chooseUpgrade(s,el.dataset.upgrade);events();skillButtons();lastPhase='';modal()};
  }else if(s.phase==='paused'){
   $('modal').innerHTML='<span class="eyebrow">TAKE A BREATH</span><h2>The battle can wait.</h2><p>Move with WASD or arrows. Your skills attack automatically.<br>Collect blue jewels to grow stronger. Space or right click to dash.</p><div class="modal-actions"><button class="primary" id="resume">RESUME BATTLE</button><button class="secondary" id="leave">CHOOSE HERO</button></div>';$('resume').onclick=()=>{s.phase='playing';lastPhase='';modal()};$('leave').onclick=goMenu;
  }else{
@@ -110,7 +122,7 @@ function modal(){
  const first=$('modal').querySelector('button');first?.focus();
 }
 function pause(){if(!run)return;if(run.phase==='playing')run.phase='paused';else if(run.phase==='paused')run.phase='playing';else return;keys.clear();pointer.active=false;stick.x=stick.z=0;modal();}
-function skillButtons(){if(!run)return;$('skill-select').innerHTML=SKILLS[run.hero.id].map((skill,i)=>`<button class="skill-choice ${run.skill===skill.id?'active':''}" data-skill="${skill.id}" aria-pressed="${run.skill===skill.id}" title="${skill.description}"><span class="mu-skill-icon" style="background-position:${-((skill.icon-1)%8)*20}px ${-Math.floor((skill.icon-1)/8)*28}px"></span><kbd>${i+1}</kbd><b>${skill.name}</b></button>`).join('');for(const button of document.querySelectorAll('[data-skill]'))button.onclick=()=>{setSkill(run,button.dataset.skill);skillButtons();};}
+function skillButtons(){if(!run)return;$('skill-select').innerHTML=SKILLS[run.hero.id].map((skill,i)=>{const locked=!run.unlockedSkills.includes(skill.id);return `<button class="skill-choice ${run.skill===skill.id?'active':''} ${locked?'locked':''}" data-skill="${skill.id}" aria-pressed="${run.skill===skill.id}" ${locked?'disabled':''} title="${locked?'Learn this skill when you level up.':skill.description}"><span class="mu-skill-icon" style="background-position:${-((skill.icon-1)%8)*20}px ${-Math.floor((skill.icon-1)/8)*28}px"></span><kbd>${locked?'LOCKED':i+1}</kbd><b>${skill.name}</b></button>`;}).join('');for(const button of document.querySelectorAll('[data-skill]'))button.onclick=()=>{setSkill(run,button.dataset.skill);skillButtons();};}
 $('pause').onclick=pause;
 $('dash-button').onclick=()=>{dashRequested=true;};
 addEventListener('keydown',e=>{if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();if(e.code==='Escape'&&!e.repeat)pause();if(run&&['Digit1','Digit2'].includes(e.code)){setSkill(run,SKILLS[run.hero.id][Number(e.code.slice(-1))-1].id);skillButtons();}keys.add(e.code)});addEventListener('keyup',e=>keys.delete(e.code));
@@ -128,27 +140,30 @@ function input(){
 }
 const gemGeo=new THREE.OctahedronGeometry(.18),gemMat=new THREE.MeshStandardMaterial({color:'#74bfdc',emissive:'#2a688e',emissiveIntensity:1.2,metalness:.5,roughness:.2});
 function renderRun(dt,t){
- const s=run;t=s.time;heroModel.position.set(s.x,heightAt(s.x,s.z),s.z);const clip=s.moving?(s.walking?'walk':'run'):'idle',clipData=assets[s.hero.id].data.clips[clip];const animationSeconds=s.moving?s.travel/(s.walking?2.9:3.8)*clipData.count/clipData.fps:t;setPose(heroModel,clip,animationSeconds,true,dt);const turn=Math.atan2(Math.sin(s.facing-heroModel.rotation.y),Math.cos(s.facing-heroModel.rotation.y));heroModel.rotation.y+=turn*(1-Math.exp(-dt*16));heroModel.userData.body.rotation.x=s.attackAnimation>0&&!s.moving?-.1*Math.sin(s.attackAnimation/.45*Math.PI):0;heroModel.visible=s.invulnerable<=0||Math.floor(t*18)%2===0;aura.position.set(s.x,heightAt(s.x,s.z)+.07,s.z);
+ const s=run;refreshAppearance();t=s.time;heroModel.position.set(s.x,heightAt(s.x,s.z),s.z);const clip=s.moving?(s.walking?'walk':'run'):'idle',clipData=assets[s.hero.id].data.clips[clip];const animationSeconds=s.moving?s.travel/(s.walking?2.9:3.8)*clipData.count/clipData.fps:t;setPose(heroModel,clip,animationSeconds,true,dt);if(s.attackAnimation>0)attackPose(heroModel,s.animationSkill===SKILLS[s.hero.id][1].id?'attack2':'attack',.6-s.attackAnimation,.6,s.moving,dt);const facing=s.attackAnimation>0?s.attackFacing:s.facing;const turn=Math.atan2(Math.sin(facing-heroModel.rotation.y),Math.cos(facing-heroModel.rotation.y));heroModel.rotation.y+=turn*(1-Math.exp(-dt*16));heroModel.userData.body.rotation.x=s.hitFlash>0?Math.sin(s.hitFlash*28)*.06:0;heroModel.visible=true;flashActor(heroModel,s.hitFlash/.32,'#ff6050');$('hit-vignette').style.opacity=String(s.hitFlash/.32*.75);protectionAura.position.copy(heroModel.position);updateAura(protectionAura,t,s.auraLevel);aura.position.set(s.x,heightAt(s.x,s.z)+.07,s.z);
  const desired=new THREE.Vector3(s.x,20+heightAt(s.x,s.z),s.z+18);camera.position.lerp(desired,1-Math.exp(-dt*5));camera.lookAt(s.x,heightAt(s.x,s.z),s.z);
- sync(s.enemies,enemies,e=>{const m=model(e.id,e.size);addShadow(m,e.size*.45);playGroup.add(m);return m},(m,e)=>{
-  m.position.set(e.x,heightAt(e.x,e.z),e.z);m.rotation.y=Math.atan2(s.x-e.x,s.z-e.z);m.traverse(child=>{if(child.isMesh&&child.morphTargetInfluences){const phase=(t*3+e.uid*.37)%4,frame=Math.floor(phase),f=phase-frame;child.morphTargetInfluences.fill(0);child.morphTargetInfluences[frame]=1-f;child.morphTargetInfluences[(frame+1)%4]=f;}});m.scale.setScalar(e.hit>0?1.06:1);
- });
+ sync(s.enemies,enemies,e=>{const m=model(e.id,e.size);addShadow(m,e.size*.45);prepareActor(m);playGroup.add(m);return m},(m,e)=>{
+  m.position.set(e.x,heightAt(e.x,e.z),e.z);m.rotation.y=Math.atan2(s.x-e.x,s.z-e.z);m.traverse(child=>{if(child.isMesh&&child.morphTargetInfluences){const phase=(t*3+e.uid*.37)%4,frame=Math.floor(phase),f=phase-frame;child.morphTargetInfluences.fill(0);child.morphTargetInfluences[frame]=1-f;child.morphTargetInfluences[(frame+1)%4]=f;}});m.userData.body.rotation.z=Math.sin(e.hit*30)*.09;flashActor(m,Math.max(0,e.hit/.16));
+ },m=>disposeActor(m));
  sync(s.shots,shots,p=>{const m=spellEffects.createProjectile(p);playGroup.add(m);return m},(m,p)=>spellEffects.moveProjectile(m,p,s.enemies.find(e=>e.uid===p.target)),m=>spellEffects.disposeProjectile(m));
  sync(s.gems,gems,g=>{const m=new THREE.Mesh(gemGeo,gemMat);playGroup.add(m);return m},(m,g)=>{m.position.set(g.x,heightAt(g.x,g.z)+.32+Math.sin(t*3+g.uid)*.06,g.z);m.rotation.y=t*1.5;});
  spellEffects.update(dt);$('orb-value').textContent=Math.ceil(s.hp);$('health-orb-fill').style.clipPath=`inset(${(1-s.hp/s.maxHp)*100}% 0 0 0)`;const activeSkill=SKILLS[s.hero.id].find(k=>k.id===s.skill);$('skill-name').textContent=activeSkill.name;$('health-fill').style.width=`${s.hp/s.maxHp*100}%`;$('health-text').textContent=`${Math.ceil(s.hp)} / ${s.maxHp}`;$('level').textContent=`LV. ${s.level}`;$('kills').textContent=`${s.kills} KILLS`;$('timer').textContent=time(s.time);$('xp-fill').style.width=`${s.xp/s.xpNeeded*100}%`;$('xp-text').textContent=`LEVEL ${s.level} · ${s.xp} / ${s.xpNeeded} EXP`;$('wave').textContent=`WAVE ${String(s.wave).padStart(2,'0')} / 10`;$('wave-fill').style.width=`${(s.time%30)/30*100}%`;$('dash-state').textContent=s.dashCooldown>0?`${s.dashCooldown.toFixed(1)}s`:'DASH';$('dash-button').style.setProperty('--ready',`${(1-s.dashCooldown/3)*100}%`);for(const button of document.querySelectorAll('[data-skill]')){const skill=SKILLS[s.hero.id].find(k=>k.id===button.dataset.skill);button.style.setProperty('--cooldown',button.dataset.skill===s.skill?`${Math.min(1,Math.max(0,s.attackTimer/(s.cooldown*skill.cooldown)))*100}%`:'0%');}
- const waveNames=['The first shadows','A restless clearing','Wings in the dark','The swarm grows','Steel meets fury','No way back','The hunt begins','A wall of darkness','Giants awaken','The final stand'];$('wave-title').textContent=waveNames[s.wave-1];
+ const waveNames=['The first shadows','A restless clearing','Wings in the dark','The swarm grows','Steel meets fury','No way back','The hunt begins','A wall of darkness','Giants awaken','The final stand'];$('wave-title').textContent=s.time%30>=22?'Horde surge':waveNames[s.wave-1];$('wave').parentElement.classList.toggle('surging',s.time%30>=22);$('horde-count').textContent=`${s.enemies.length} ENEMIES IN THE ARENA`;$('gear-status').textContent=`${s.armorEquipped?ARMOR[s.hero.id].name:'Starter armor'}${s.enhancement?' +'+s.enhancement:''}${s.auraLevel?' · AURA '+s.auraLevel:''}`;
  if(lastWave!==s.wave){lastWave=s.wave;toast(`Wave ${s.wave} · ${waveNames[s.wave-1]}`)}
  const boss=s.enemies.find(e=>e.elite);$('boss-health').hidden=!boss;if(boss)$('boss-fill').style.width=`${Math.max(0,boss.hp/boss.maxHp*100)}%`;
  if(s.time>=DURATION&&!s.bossDefeated)$('objective').textContent='Finish the Lorencia Guardian';else $('objective').textContent='Survive 05:00 · defeat the guardian';
  if(lastPhase!==s.phase){lastPhase=s.phase;modal();}
 }
 function sync(items,map,create,update,dispose=null){const ids=new Set();for(const item of items){ids.add(item.uid);let object=map.get(item.uid);if(!object){object=create(item);map.set(item.uid,object)}update(object,item)}for(const [id,object]of map)if(!ids.has(id)){playGroup.remove(object);dispose?.(object);map.delete(id)}}
-function events(){for(const e of run.events){
+function events(){let hitNumbers=0;for(const e of run.events){
  if(e.type==='attack'){const skill=SKILLS[run.hero.id].find(k=>k.id===e.skill);effect(skill.sound);spellEffects.attack(e.skill,e.x,e.z,e.facing,e.range);}
  else if(e.type==='impact')spellEffects.impact(e.skill,e.x,e.z);
- else if(e.type==='death')spellEffects.burst(e.x,e.z,'#e5c392',5,.6);
- else if(e.type==='hurt')spellEffects.burst(run.x,run.z,'#ff7f80',7,.5);
+ else if(e.type==='hit'){const actor=enemies.get(e.uid);if(actor)flashActor(actor,1);if(hitNumbers++<8)spellEffects.hit(e.x,e.z,e.size,e.damage);effect('hit');}
+ else if(e.type==='death'){spellEffects.death(enemies.get(e.uid),e.x,e.z,e.size);effect('death-'+e.id);}
+ else if(e.type==='hurt'){spellEffects.burst(run.x,run.z,'#ff7f80',12,.8);effect('hurt-'+run.hero.id);}
  else if(e.type==='level')effect('level-up');
+ else if(e.type==='reward'){effect(e.id==='armor'||e.id.startsWith('enhance')?'armor':'level-up');toast(e.id==='armor'?ARMOR[run.hero.id].name+' equipped':e.id==='unlock-skill'?'New skill learned':e.id==='aura'?'Aura awakened':e.id==='enhance13'?'Armor enhanced to +13':e.id==='enhance15'?'Armor enhanced to +15':'Blessing acquired');}
+ else if(e.type==='surge')toast('Wave '+e.wave+' · The horde surges!');
  else if(e.type==='boss')toast('The Lorencia Guardian awakens.');
 }}
 function resize(){renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix()}addEventListener('resize',resize);
@@ -162,7 +177,7 @@ function animate(ms){requestAnimationFrame(animate);const dt=Math.min((ms-last)/
  }
  for(const prop of scenery)prop.visible=prop.position.distanceTo(camera.position)<67;renderer.render(scene,camera);
 }
-async function init(){try{[terrainData,objectData]=await Promise.all([fetch('assets/lorencia-terrain.json').then(r=>r.json()),fetch('assets/lorencia-objects.json').then(r=>r.json())]);await Promise.all(['knight','wizard','elf','spider','budge','bull','hound','giant','weapon-sword','weapon-staff','weapon-bow',...objectData.models].map(loadModel));$('load-status').textContent='Building the clearing…';await world();ready=true;$('loading').hidden=true;$('begin').disabled=false;$('begin').innerHTML='ENTER LORENCIA <span>↗</span>';requestAnimationFrame(animate);}catch(error){console.error(error);$('load-status').textContent=`Could not load the demo: ${error.message}. Start it with npm start from App.`;}}
+async function init(){try{[terrainData,objectData]=await Promise.all([fetch('assets/lorencia-terrain.json').then(r=>r.json()),fetch('assets/lorencia-objects.json').then(r=>r.json())]);await Promise.all(['knight','wizard','elf','knight-armor','wizard-armor','elf-armor','spider','budge','bull','hound','giant','weapon-sword','weapon-staff','weapon-bow',...objectData.models].map(loadModel));[chromeTexture,auraTexture,shinyTexture]=await Promise.all(['assets/textures/effect-chrome01.png','assets/textures/effect-aurawave_blue_00.png','assets/textures/effect-shiny01.png'].map(loadTexture));$('load-status').textContent='Building the clearing…';await world();ready=true;$('loading').hidden=true;$('begin').disabled=false;$('begin').innerHTML='ENTER LORENCIA <span>↗</span>';requestAnimationFrame(animate);}catch(error){console.error(error);$('load-status').textContent=`Could not load the demo: ${error.message}. Start it with npm start from App.`;}}
 init();
 // Small inspectable state for local QA; no accounts, services or persisted gameplay.
 window.muDemo={get run(){return run},get ready(){return ready},get renderer(){return renderer},get hero(){return heroModel},get obstacles(){return obstacles},get scenery(){return scenery},get effects(){return spellEffects},start,goMenu,select:id=>{if(CLASSES.some(c=>c.id===id)){selected=id;cards()}},pause};

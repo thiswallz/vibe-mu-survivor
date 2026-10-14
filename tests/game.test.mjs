@@ -23,7 +23,7 @@ test('death ends a run and pause freezes movement',()=>{
 test('each class can switch skills and both skills damage enemies',async()=>{
  const {SKILLS,setSkill}=await import('../packages/game/src/index.js');
  for(const hero of CLASSES)for(const skill of SKILLS[hero.id]){
-  const s=createRun(hero.id,()=>.5);s.spawnTimer=100;setSkill(s,skill.id);s.attackTimer=0;
+  const s=createRun(hero.id,()=>.5);s.spawnTimer=100;s.unlockedSkills.push(skill.id);setSkill(s,skill.id);s.attackTimer=0;
   const e=spawnEnemy(s,4);e.x=2;e.z=0;e.speed=0;const hp=e.hp;
   for(let i=0;i<60;i++)tick(s,1/60);
   assert.ok(e.hp<hp,`${hero.id} ${skill.id} should damage a target`);
@@ -43,4 +43,21 @@ test('solid prop footprints block walking and allow sliding along their edge',as
 test('walking into an obstacle freezes the stride instead of running in place',()=>{
  const s=createRun('knight');s.obstacles=[{minX:.43,maxX:2,minZ:-2,maxZ:2}];s.spawnTimer=100;
  tick(s,1/60,{x:1});assert.equal(s.x,0);assert.equal(s.moving,false);assert.equal(s.travel,0);
+});
+
+test('second skill is learned as a level-up reward and cannot be used while locked',async()=>{
+ const {SKILLS,setSkill}=await import('../packages/game/src/index.js');const s=createRun('wizard');assert.equal(setSkill(s,SKILLS.wizard[1].id),false);s.gems.push({uid:1,x:0,z:0,xp:12});tick(s,1/60);assert.ok(s.choices.includes('unlock-skill'));chooseUpgrade(s,'unlock-skill');assert.ok(s.unlockedSkills.includes('hellfire'));assert.equal(s.skill,'hellfire');
+});
+test('armor, enhancement and aura rewards improve combat and protection',async()=>{
+ const {upgradeDefinition}=await import('../packages/game/src/index.js');const s=createRun('knight');s.level=8;const hp=s.maxHp,damage=s.damage;
+ for(const id of ['armor','enhance13','enhance15','aura']){s.phase='upgrade';s.choices=[id];s.pendingLevels=1;assert.ok(upgradeDefinition(s,id));chooseUpgrade(s,id);}
+ assert.equal(s.enhancement,15);assert.equal(s.maxHp,hp+35);assert.ok(s.damage>damage*1.3);assert.equal(s.auraLevel,1);
+ const e=spawnEnemy(s,4);e.x=3;e.z=0;e.speed=0;s.spawnTimer=100;s.attackTimer=100;const before=e.hp;tick(s,.02);assert.ok(e.hp<before,'aura should damage nearby enemies');
+});
+test('wave finales spawn substantially larger packs and emit a surge cue',()=>{
+ const regular=createRun('knight',()=>.5);regular.time=10;regular.spawnTimer=0;tick(regular,.01);
+ const finale=createRun('knight',()=>.5);finale.time=22;finale.spawnTimer=0;tick(finale,.01);assert.ok(finale.enemies.length>=regular.enemies.length*3);assert.ok(finale.events.some(e=>e.type==='surge'));
+});
+test('hits and deaths carry monster identity for correct feedback and audio',()=>{
+ const s=createRun('knight');s.spawnTimer=100;const e=spawnEnemy(s,0);e.x=1;e.z=0;tick(s,.01);const death=s.events.find(e=>e.type==='death');assert.equal(death.id,'spider');assert.equal(death.uid,e.uid);assert.ok(s.events.some(e=>e.type==='hit'&&e.damage>0));
 });

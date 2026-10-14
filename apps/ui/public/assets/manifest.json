@@ -834,5 +834,41 @@
     "file": "assets/models/lorencia-95.json",
     "triangles": 68,
     "height": 3.24032
+  },
+  "knight-armor": {
+    "source": [
+      "Player/HelmMale09.bmd",
+      "Player/ArmorMale09.bmd",
+      "Player/PantMale09.bmd",
+      "Player/GloveMale09.bmd",
+      "Player/BootMale09.bmd"
+    ],
+    "file": "assets/models/knight-armor.json",
+    "triangles": 660,
+    "height": 1.91755
+  },
+  "wizard-armor": {
+    "source": [
+      "Player/HelmMale10.bmd",
+      "Player/ArmorMale10.bmd",
+      "Player/PantMale10.bmd",
+      "Player/GloveMale10.bmd",
+      "Player/BootMale10.bmd"
+    ],
+    "file": "assets/models/wizard-armor.json",
+    "triangles": 694,
+    "height": 2.0168700000000004
+  },
+  "elf-armor": {
+    "source": [
+      "Player/HelmElf05.bmd",
+      "Player/ArmorElf05.bmd",
+      "Player/PantElf05.bmd",
+      "Player/GloveElf05.bmd",
+      "Player/BootElf05.bmd"
+    ],
+    "file": "assets/models/elf-armor.json",
+    "triangles": 840,
+    "height": 1.98247
   }
 }

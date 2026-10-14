@@ -6,6 +6,7 @@ const context=glowCanvas.getContext('2d');const gradient=context.createRadialGra
 gradient.addColorStop(0,'rgba(255,255,255,1)');gradient.addColorStop(.16,'rgba(255,255,255,.9)');gradient.addColorStop(.42,'rgba(255,255,255,.3)');gradient.addColorStop(1,'rgba(255,255,255,0)');context.fillStyle=gradient;context.fillRect(0,0,64,64);
 const glowTexture=new THREE.CanvasTexture(glowCanvas);
 const shapes={arrow:new THREE.CylinderGeometry(.035,.035,1.55,6),head:new THREE.ConeGeometry(.13,.38,6),crystal:new THREE.OctahedronGeometry(.18),shard:new THREE.ConeGeometry(.1,.65,5),line:new THREE.PlaneGeometry(1,1)};
+const damageTextures=new Map();
 const palette={slash:'#ffc56f',stab:'#ffeba8',evil:'#b18aff',hellfire:'#ff7537',multishot:'#adffd3',icearrow:'#75dcff'};
 const additive=(color,opacity=1)=>new THREE.MeshBasicMaterial({color,transparent:true,opacity,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,toneMapped:false});
 function sprite(color,size){const material=new THREE.SpriteMaterial({map:glowTexture,color,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,toneMapped:false});const s=new THREE.Sprite(material);s.scale.set(size,size,size);return s;}
@@ -49,6 +50,18 @@ export class SpellEffects{
   this.burst(x,z,palette[skill]||'#d0baff',skill==='evil'?10:7,.8);
  }
  burst(x,z,color,count,radius){const group=this.place(new THREE.Group(),x,z,.65),embers=[];for(let i=0;i<count;i++){const glow=sprite(color,.12+Math.random()*.16),a=Math.random()*Math.PI*2;group.add(glow);embers.push({glow,x:Math.sin(a)*radius,z:Math.cos(a)*radius,y:.3+Math.random()*1.4});}this.add(group,.55,t=>{for(const e of embers)e.glow.position.set(e.x*t,e.y*t-t*t,e.z*t);this.fade(group,1-t);});}
+ hit(x,z,size,damage){
+  this.burst(x,z,'#fff0bf',4,.28);
+  const key=Math.round(damage);let texture=damageTextures.get(key);
+  if(!texture){const canvas=document.createElement('canvas');canvas.width=128;canvas.height=64;const ctx=canvas.getContext('2d');ctx.font='bold 36px Georgia';ctx.textAlign='center';ctx.lineWidth=5;ctx.strokeStyle='#35150a';ctx.strokeText(String(key),64,44);ctx.fillStyle='#ffdf8b';ctx.fillText(String(key),64,44);texture=new THREE.CanvasTexture(canvas);damageTextures.set(key,texture);}
+  const number=new THREE.Sprite(new THREE.SpriteMaterial({map:texture,transparent:true,depthTest:false,toneMapped:false}));number.scale.set(1.7,.85,1);this.place(number,x,z,size+.3);const base=number.position.y;
+  this.add(number,.65,t=>{number.position.y=base+t*1.4;number.material.opacity=1-t*t;});
+ }
+ death(body,x,z,size){
+  const group=new THREE.Group();if(body){const metadata=body.userData;body.userData={};const corpse=body.clone();body.userData=metadata;corpse.traverse(o=>{if(o.material){o.material=o.material.clone();o.material.transparent=true;o.material.depthWrite=false;}});group.add(corpse);const startY=corpse.position.y;this.add(group,.85,t=>{corpse.rotation.z=t*t*1.25;corpse.position.y=startY-t*.28;this.fade(corpse,1-t*t);});}
+  const soul=this.place(sprite('#b2e7ff',size*.75),x,z,size*.5),base=soul.position.y;this.add(soul,.95,t=>{soul.position.y=base+t*2;soul.scale.setScalar(size*.75*(1-t*.6));soul.material.opacity=Math.sin(Math.PI*t);});
+  const ground=this.place(arc(Math.max(.45,size*.5),.08,'#c7a56e'),x,z,.08);this.add(ground,.65,t=>{ground.scale.setScalar(.5+t);ground.material.opacity=1-t;});this.burst(x,z,'#d7b183',10,size*.6);
+ }
  createProjectile(shot){
   const root=new THREE.Group(),color=palette[shot.skill];
   if(shot.skill==='evil'){const core=sprite('#eee2ff',.48);root.add(core);const aura=sprite(color,.9);root.add(aura);for(const side of [-1,1]){const eye=sprite('#ffffff',.1);eye.position.set(side*.1,.06,.1);root.add(eye);}}
