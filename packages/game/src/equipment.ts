@@ -114,14 +114,7 @@ export function itemStats(item: Pick<InventoryItem, 'id' | 'enhancement'>) {
   };
 }
 export function bagItems(run: EquipmentActor) {
-  return run.inventory
-    .map((item) => ({
-      ...item,
-      quantity:
-        item.quantity -
-        Object.values(run.equipment).filter((e) => e && itemKey(e) === itemKey(item)).length,
-    }))
-    .filter((item) => item.quantity > 0);
+  return run.inventory.filter((item) => item.quantity > 0);
 }
 export function applyEquipment(run: EquipmentActor) {
   const pieces = Object.values(run.equipment).filter(
@@ -149,12 +142,25 @@ export function equipItem(run: EquipmentActor, item: InventoryItem | EquippedIte
     !run.inventory.some((owned) => itemKey(owned) === itemKey(item))
   )
     return false;
+  const owned = run.inventory.find((entry) => itemKey(entry) === itemKey(item))!;
+  owned.quantity--;
+  run.inventory = run.inventory.filter((entry) => entry.quantity > 0);
+  const previous = run.equipment[def.slot!];
+  if (previous) returnToBag(run, previous);
   run.equipment[def.slot!] = { id: item.id, enhancement: item.enhancement || 0 };
   applyEquipment(run);
   return true;
 }
+function returnToBag(run: EquipmentActor, item: EquippedItem) {
+  const existing = run.inventory.find((entry) => itemKey(entry) === itemKey(item));
+  if (existing) existing.quantity++;
+  else run.inventory.push({ ...item, quantity: 1 });
+}
 export function unequipSlot(run: EquipmentActor, slot: EquipmentSlot) {
   if (!SLOTS.includes(slot)) return false;
+  const previous = run.equipment[slot];
+  if (!previous) return false;
+  returnToBag(run, previous);
   run.equipment[slot] = null;
   applyEquipment(run);
   return true;

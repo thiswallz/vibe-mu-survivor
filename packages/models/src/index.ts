@@ -37,7 +37,7 @@ export interface LootState {
   dropped: number;
 }
 export interface InventoryProfile {
-  version: 2;
+  version: 3;
   items: InventoryItem[];
   loadouts: Record<HeroId, Equipment>;
 }

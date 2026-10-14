@@ -83,7 +83,12 @@ export function createInventoryPanel({
     hideDetails();
     const s = context(),
       items = bagItems(s);
-    let chosen = s.inventory.find((item) => itemKey(item) === selected);
+    let chosen = [
+      ...s.inventory,
+      ...Object.values(s.equipment)
+        .filter((item) => item !== null)
+        .map((item) => ({ ...item, quantity: 1 })),
+    ].find((item) => itemKey(item) === selected);
     if (!chosen) {
       chosen = items.find((i) => ITEMS[i.id].hero === s.hero.id) || items[0];
       selected = chosen ? itemKey(chosen) : null;
