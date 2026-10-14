@@ -1,14 +1,15 @@
 // Original client voices, with small pools and distance attenuation for horde battles.
 export const MONSTER_AUDIO=Object.freeze(Object.fromEntries(['spider','budge','bull','hound','giant'].map(id=>[id,{idle:'idle-'+id,attack:'attack-'+id,death:'death-'+id}])));
 export class GameAudio{
+ muted:boolean;times:Map<string,number>;music:HTMLAudioElement;pools:Record<string,HTMLAudioElement[]>;
  constructor(){
   this.muted=false;this.times=new Map();this.music=new Audio('assets/audio/lorencia-pub.mp3');this.music.loop=true;this.music.volume=.24;
   const ids=['knight','wizard','elf','level-up','evil','hellfire','ice','stab','hurt-knight','hurt-wizard','hurt-elf','hit','armor',...Object.values(MONSTER_AUDIO).flatMap(Object.values)];
   this.pools=Object.fromEntries(ids.map(id=>[id,Array.from({length:3},()=>new Audio(`assets/audio/${id}.wav`))]));
  }
- setMuted(value){this.muted=value;this.music.muted=value;for(const pool of Object.values(this.pools))for(const voice of pool)voice.muted=value;}
+ setMuted(value:boolean){this.muted=value;this.music.muted=value;for(const pool of Object.values(this.pools))for(const voice of pool)voice.muted=value;}
  startMusic(){if(!this.muted)this.music.play().catch(()=>{});}
- effect(id,distance=0){
+ effect(id:string,distance=0){
   if(this.muted)return;const pool=this.pools[id];if(!pool)return;
   const monster=/^(idle|attack|death)-/.test(id),interval=id.startsWith('idle-')?1800:id.startsWith('attack-')?500:id.startsWith('death-')||id==='hit'?120:0;
   const now=performance.now();if(now-(this.times.get(id)??-10000)<interval)return;
