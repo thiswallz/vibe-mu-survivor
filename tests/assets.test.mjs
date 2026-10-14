@@ -151,3 +151,20 @@ test('starting heroes use native unarmored bodies; armor skin placeholders resol
     assert.ok(armor.parts.every((p) => !p.sourceTexture.startsWith('hide')));
   }
 });
+
+test('inventory armor icons use the native Player texture fallback and preserve piece slots', () => {
+  for (const hero of ['knight', 'wizard', 'elf']) {
+    for (const slot of ['helm', 'armor', 'pants', 'gloves', 'boots']) {
+      const model = JSON.parse(
+        fs.readFileSync(path.join(ui, `assets/models/loot-${hero}-${slot}.json`)),
+      );
+      assert.ok(model.parts.length);
+      for (const part of model.parts) {
+        assert.equal(part.slot, slot);
+        assert.ok(part.texture, `${hero} ${slot} must have a real texture`);
+        assert.ok(fs.existsSync(path.join(ui, part.texture)));
+        assert.ok(!/^(hide|skin|level)/i.test(part.sourceTexture));
+      }
+    }
+  }
+});

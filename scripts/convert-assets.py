@@ -121,7 +121,7 @@ def convert(key,paths,animate=False,playerRig=None):
      positions.extend(transform(vv[vi[k]],mat));uvs.extend([uv[ui[k]][0],1-uv[ui[k]][1]])
      for idx,m in enumerate(frames):morph[idx].extend(transform(vv[vi[k]],m))
    if positions:
-    part={'positions':positions,'uvs':uvs,'texture':texture(path.parent,resolved),'sourceTexture':tex,'resolvedTexture':resolved,'sourceModel':str(path.relative_to(SOURCE)),'slot':{'Helm':'helm','Armor':'armor','Pant':'pants','t_Pant':'pants','Glove':'gloves','Boot':'boots'}.get(next((prefix for prefix in ['t_Pant','Helm','Armor','Pant','Glove','Boot'] if path.stem.startswith(prefix)),''))}
+    part={'positions':positions,'uvs':uvs,'texture':texture(path.parent,resolved) or texture(SOURCE/'Player',resolved),'sourceTexture':tex,'resolvedTexture':resolved,'sourceModel':str(path.relative_to(SOURCE)),'slot':{'Helm':'helm','Armor':'armor','Pant':'pants','t_Pant':'pants','Glove':'gloves','Boot':'boots'}.get(next((prefix for prefix in ['t_Pant','Helm','Armor','Pant','Glove','Boot'] if path.stem.startswith(prefix)),''))}
     if playerRig:part['upperBody']=sum(v[0]>=17 for v in vv)>len(vv)/2
     if morph:part['frames']=morph
     parts.append(part);bounds.extend(np.array(positions).reshape(-1,3).tolist())
