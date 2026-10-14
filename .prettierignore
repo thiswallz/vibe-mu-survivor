@@ -1,0 +1,8 @@
+**/node_modules
+**/dist
+**/__pycache__
+apps/ui/public/assets
+apps/ui/public/vendor
+scripts/vendor
+artifacts
+*.py

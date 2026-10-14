@@ -66,5 +66,21 @@
     "Item/Jewel02.bmd",
     "Item/Jewel03.bmd",
     "Item/Jewel15.bmd"
-  ]
+  ],
+  "inventoryInterface": [
+    "Interface/InventoryBox2.OZJ",
+    "Interface/newui_item_back01.OZT",
+    "Interface/newui_item_cap.OZT",
+    "Interface/newui_item_upper.OZT",
+    "Interface/newui_item_lower.OZT",
+    "Interface/newui_item_gloves.OZT",
+    "Interface/newui_item_boots.OZT",
+    "Interface/newui_item_weapon(R).OZT"
+  ],
+  "starterBodyMapping": {
+    "knight": "Player/*Class02.bmd",
+    "wizard": "Player/*Class01.bmd",
+    "elf": "Player/*Class03.bmd"
+  },
+  "equipmentModels": "Item armor pieces and Sword16.bmd / Staff12.bmd / Bow06.bmd; see manifest.json"
 }

@@ -1,0 +1,318 @@
+#inventory-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 20px 42px;
+  background: #03070755;
+  backdrop-filter: blur(2px);
+}
+.inventory-window {
+  width: 370px;
+  max-height: calc(100dvh - 40px);
+  overflow: auto;
+  padding: 0 20px 14px;
+  color: #ddd1b7;
+  background: linear-gradient(#272724f7, #101513fc);
+  border: 2px solid #8e7954;
+  border-radius: 5px;
+  box-shadow:
+    0 12px 70px #000c,
+    inset 0 0 0 3px #0c0f0e;
+  font:
+    12px Arial,
+    sans-serif;
+}
+.inventory-title {
+  margin: 0 -20px 12px;
+  padding: 10px 15px 15px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: url('/assets/textures/interface-newui_item_back01-alpha.png') center/100% 100%
+    no-repeat;
+  height: 48px;
+}
+.inventory-title h2 {
+  font: 20px Georgia;
+  margin: 0;
+  color: #e3c990;
+  text-shadow: 0 2px 3px black;
+}
+.inventory-title > button {
+  background: #151915;
+  border: 1px solid #aa945f;
+  color: #f4daaa;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  font-size: 19px;
+  line-height: 18px;
+}
+.inventory-character {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #b4976044;
+}
+.inventory-character b {
+  font: 16px Georgia;
+  color: #eddfbb;
+}
+.inventory-character span {
+  font-size: 10px;
+  color: #a5b5a1;
+}
+.equipment-slots {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: 87px 98px;
+  gap: 8px;
+  margin: 14px 0 18px;
+}
+.equipment-slot {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #080c0b url('/assets/textures/interface-inventorybox2.png') center/100% 100%;
+  border: 1px solid #756b51;
+  color: #c3b393;
+  min-width: 0;
+}
+.equipment-slot.filled {
+  border-color: #9f8a63;
+}
+.equipment-slot img {
+  width: 75px;
+  height: 70px;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 3px black);
+}
+.equipment-slot .slot-outline {
+  width: 52px;
+  height: 61px;
+  opacity: 0.58;
+}
+.equipment-slot small {
+  position: absolute;
+  bottom: 3px;
+  left: 0;
+  right: 0;
+  font-size: 9px;
+  letter-spacing: 0.4px;
+  text-align: center;
+}
+.slot-helm {
+  grid-column: 2;
+  grid-row: 1;
+}
+.slot-armor {
+  grid-column: 2;
+  grid-row: 2;
+}
+.slot-weapon {
+  grid-column: 1;
+  grid-row: 1;
+}
+.slot-gloves {
+  grid-column: 1;
+  grid-row: 2;
+}
+.slot-pants {
+  grid-column: 3;
+  grid-row: 1;
+}
+.slot-boots {
+  grid-column: 3;
+  grid-row: 2;
+}
+.inventory-bag-title {
+  display: flex;
+  justify-content: space-between;
+  color: #aa9972;
+  font-size: 9px;
+  letter-spacing: 1.2px;
+  margin-bottom: 7px;
+}
+.inventory-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 1px;
+  padding: 2px;
+  background: #050807;
+  border: 1px solid #7c6a46;
+  max-height: 244px;
+  overflow: auto;
+}
+.inventory-cell {
+  min-width: 0;
+  position: relative;
+  aspect-ratio: 1;
+  background: url('/assets/textures/interface-inventorybox2.png') center/100% 100%;
+  border: 1px solid transparent;
+  padding: 0;
+  color: #cfc39f;
+}
+.inventory-cell img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+.inventory-cell.selected {
+  border: 1px solid #e4bd60;
+  background-color: #a7864433;
+  box-shadow: inset 0 0 7px #e1b05a77;
+}
+.inventory-cell.other-class {
+  opacity: 0.58;
+}
+.inventory-cell small {
+  position: absolute;
+  bottom: 0;
+  right: 1px;
+  font-size: 8px;
+  text-shadow: 0 1px 2px black;
+}
+.inventory-cell em,
+.equipment-slot em {
+  position: absolute;
+  left: 2px;
+  top: 1px;
+  font-size: 9px;
+  font-style: normal;
+  color: #fcdb7b;
+  text-shadow: 0 1px 3px black;
+}
+.inventory-detail {
+  min-height: 76px;
+  margin-top: 12px;
+  padding: 11px 10px;
+  background: #090e0bcc;
+  border: 1px solid #81724a55;
+}
+.inventory-detail b {
+  font-size: 12px;
+  font-weight: normal;
+}
+.inventory-detail p {
+  font-size: 10px;
+  line-height: 1.6;
+  margin: 7px 0 0;
+  color: #9bb79d;
+}
+.inventory-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0;
+}
+.inventory-actions button {
+  padding: 9px 18px;
+  border: 1px solid #bba26e;
+  background: linear-gradient(#4d4837, #222719);
+  color: #e3cf9c;
+  font-size: 10px;
+}
+.inventory-actions button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.inventory-actions span {
+  font-size: 9px;
+  color: #879988;
+}
+.inventory-help {
+  font-size: 9px;
+  color: #8c9986;
+  line-height: 1.5;
+}
+.inventory-slot-button {
+  background: #191d17;
+  border: 1px solid #b19663;
+  color: #f0dcaf;
+  padding: 8px 12px;
+  font-size: 11px;
+}
+.inventory-cell:hover,
+.equipment-slot:hover {
+  border-color: #dcc68d;
+}
+@media (max-width: 600px) {
+  #inventory-overlay {
+    padding: 10px;
+    justify-content: center;
+  }
+  .inventory-window {
+    max-width: 100%;
+    max-height: calc(100dvh - 20px);
+    width: 354px;
+    padding: 0 16px 12px;
+  }
+  .inventory-title {
+    margin: 0 -16px 10px;
+  }
+  .equipment-slots {
+    grid-template-rows: 72px 82px;
+    margin: 10px 0;
+  }
+  .equipment-slot img {
+    height: 64px;
+  }
+  .inventory-help {
+    font-size: 8px;
+  }
+}
+@media (max-height: 580px) and (min-width: 601px) {
+  #inventory-overlay {
+    padding: 10px;
+  }
+  .inventory-window {
+    width: 670px;
+    display: grid;
+    grid-template-columns: 210px 1fr;
+    gap: 0 20px;
+    padding: 0 16px 10px;
+  }
+  .inventory-title,
+  .inventory-character {
+    grid-column: 1/-1;
+  }
+  .equipment-slots {
+    grid-column: 1;
+    grid-row: 3/6;
+    grid-template-rows: 80px 88px;
+  }
+  .inventory-bag-title {
+    grid-column: 2;
+    margin-top: 10px;
+  }
+  .inventory-grid {
+    grid-column: 2;
+    max-height: 145px;
+  }
+  .inventory-detail {
+    grid-column: 2;
+    min-height: 62px;
+  }
+  .inventory-actions,
+  .inventory-help {
+    grid-column: 1/-1;
+  }
+  .inventory-actions {
+    margin: 6px 0;
+  }
+}
+body.playing #stash {
+  display: block !important;
+  pointer-events: auto;
+}
+.battle-help .inventory-slot-button {
+  padding: 3px 7px;
+  font-size: 9px;
+}

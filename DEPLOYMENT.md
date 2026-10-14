@@ -24,7 +24,7 @@ docker compose --profile split up --build -d
 
 Open the same http://localhost:8080. Only the UI publishes a host port; `/api/*` is proxied to `http://server:8080`. Stop with `docker compose --profile split down`. Choose another host port with `DEMO_PORT=8082`. Do not run both profiles on the same host port.
 
-Both services use the same multi-stage Dockerfile and non-root Node 24 image. The build runs the tests and builds the UI; startup directly serves the existing build. `/healthz` is the container's local health check. `.env` and source conversion tools are excluded from the image.
+Both services use the same multi-stage Dockerfile and non-root Node 24 image. The build installs locked dependencies, strictly type-checks and compiles the TypeScript packages/server, bundles the Vite UI, and runs tests; startup directly serves the existing build. `/healthz` is the container's local health check. `.env` and source conversion tools are excluded from the image.
 
 ## Railway: one service
 
@@ -37,12 +37,12 @@ Both services use the same multi-stage Dockerfile and non-root Node 24 image. Th
 
 Create two services from the same workspace root and Dockerfile, named `ui` and `server`. Both use the same `railway.json` health check. Set these runtime variables:
 
-| Service | Variable | Value |
-| --- | --- | --- |
-| server | SERVE_UI | false |
-| server | PORT | 8080 |
-| ui | SERVE_UI | true |
-| ui | INTERNAL_API_URL | `http://${{server.RAILWAY_PRIVATE_DOMAIN}}:${{server.PORT}}` |
+| Service | Variable         | Value                                                        |
+| ------- | ---------------- | ------------------------------------------------------------ |
+| server  | SERVE_UI         | false                                                        |
+| server  | PORT             | 8080                                                         |
+| ui      | SERVE_UI         | true                                                         |
+| ui      | INTERNAL_API_URL | `http://${{server.RAILWAY_PRIVATE_DOMAIN}}:${{server.PORT}}` |
 
 Generate a public domain **on ui**. The server uses Railway's private network. Keep both services in the same project/environment. Do not set INTERNAL_API_URL on the server, and never put the private hostname in browser code. The browser requests `/api` on the UI's public origin; the Node UI service makes the private request at runtime. Changing the internal address only requires restarting/redeploying the UI service, not rebuilding browser assets.
 
@@ -50,16 +50,16 @@ Generate a public domain **on ui**. The server uses Railway's private network. K
 
 ## Local environment
 
-Copy `.env.example` to `.env` in App, edit it, and run `npm start`. Node 20.12+ is required; the Docker image uses Node 24. The server loads `.env`, preserving variables already supplied by the process/platform. Docker Compose sets its runtime variables explicitly; it does not inject the local-development `.env` into containers.
+Copy `.env.example` to `.env` in App, edit it, and run `npm start`. Node 22.12+ is required; Node 24 is recommended and used by Docker. Run npm ci once before local commands. The server loads `.env`, preserving variables already supplied by the process/platform. Docker Compose sets its runtime variables explicitly; it does not inject the local-development `.env` into containers.
 
-| Variable | Purpose |
-| --- | --- |
-| PORT | Listening port; defaults to 5173 locally, 8080 in Docker |
-| HOST | Listening address; localhost locally, `::` in Docker |
-| SERVE_UI | `true` serves UI/API; `false` serves API only |
+| Variable         | Purpose                                                              |
+| ---------------- | -------------------------------------------------------------------- |
+| PORT             | Listening port; defaults to 5173 locally, 8080 in Docker             |
+| HOST             | Listening address; localhost locally, `::` in Docker                 |
+| SERVE_UI         | `true` serves UI/API; `false` serves API only                        |
 | INTERNAL_API_URL | Optional HTTP(S) API origin, UI service only; no path or credentials |
-| NODE_ENV | `production` serves built UI, `development` allows source serving |
-| DEMO_PORT | Compose-only host port; defaults to 8080 |
+| NODE_ENV         | `production` serves built UI, `development` allows source serving    |
+| DEMO_PORT        | Compose-only host port; defaults to 8080                             |
 
 ## Verify after deployment
 
@@ -69,6 +69,6 @@ curl --fail https://YOUR-UI-DOMAIN/api/health
 curl --fail https://YOUR-UI-DOMAIN/api/demo
 ```
 
-Open the public URL, select each hero, and start a run. Assets, music and skill sounds come from that same origin. No localhost URL is embedded in the shipped game. Local checks: `npm test` and `npm run build`.
+Open the public URL, select each hero, and start a run. Assets, music and skill sounds come from that same origin. No localhost URL is embedded in the shipped game. Local checks: `npm run check`.
 
 References: [Railway private networking](https://docs.railway.com/networking/private-networking), [configuration as code](https://docs.railway.com/config-as-code/reference).

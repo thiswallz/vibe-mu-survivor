@@ -1,30 +1,125 @@
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#11191b"><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23101719'/%3E%3Ctext x='5' y='45' font-family='Georgia' font-weight='bold' font-size='30' fill='%23d5b98a'%3EMU%3C/text%3E%3C/svg%3E"><title>MU Survivor · Lorencia</title><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="hud.css"></head>
-<body>
-<div id="world"></div><div id="hit-vignette"></div><div class="vignette"></div>
-<header id="header"><a class="wordmark" href="/" aria-label="MU Survivor home">MU<span>SURVIVOR</span></a><div class="header-right"><span class="build-label"><i></i> LOCAL PROTOTYPE · 01</span><button class="icon-btn" id="stash">INVENTORY</button><button id="sound" class="icon-btn" aria-label="Mute audio" title="Mute audio">♪ SOUND ON</button><button id="fullscreen" class="icon-btn" aria-label="Toggle fullscreen">⛶</button></div></header>
-<main id="menu">
- <div class="intro"><div class="eyebrow"><span></span> A NEW WAY TO RETURN TO MU</div><h1>One hero.<br>An endless horde.</h1><p>The world you remember. A fight you haven’t played.<br>Choose your hero and survive the fall of Lorencia.</p></div>
- <aside class="stage"><span class="eyebrow">THE FIRST STAND</span><h2>01 <span>Lorencia</span></h2><div class="stage-line"></div><p>Outside the sanctuary, darkness gathers.</p><div class="stage-stats"><span><b>3</b> MINUTES</span><span><b>10</b> WAVES</span><span><b>1</b> FINAL BOSS</span></div></aside>
- <section class="selection"><div class="selection-label"><span class="eyebrow">CHOOSE YOUR HERO</span><span>01 — 03</span></div><div id="cards" class="cards"></div><div class="begin-row"><p><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move <span>·</span> Attacks are automatic <span>·</span> <kbd>SPACE</kbd> dash</p><button id="begin" class="primary" disabled>PREPARING LORENCIA… <span>↗</span></button></div></section>
- <footer><span>NO ACCOUNT. JUST SURVIVE.</span><span>WEBGL · SINGLE PLAYER · ORIGINAL MU ASSETS</span></footer>
-</main>
-<div id="hud" hidden>
- <div class="hero-panel"><span class="eyebrow" id="hero-name"></span><div class="small-stats"><span id="level">LV. 1</span><span id="kills">0 KILLS</span></div><div id="gear-status">Starter armor</div></div>
- <div class="run-clock"><span class="eyebrow">LORENCIA · SURVIVE</span><b id="timer">00:00</b><span id="objective">Survive 03:00 · defeat the guardian</span></div>
- <div class="wave-panel"><span class="eyebrow" id="wave">WAVE 01 / 10</span><b id="wave-title">The first shadows</b><div class="wave-progress"><i id="wave-fill"></i></div><small id="horde-count"></small></div>
- <div id="boss-health" hidden><span>LORENCIA GUARDIAN</span><div><i id="boss-fill"></i></div></div>
- <div class="bottom-hud">
-  <div class="vitality-panel"><div class="mu-health-orb"><div id="health-orb-fill"></div><b id="orb-value">160</b></div><div class="vitality-details"><span>VITALITY</span><b id="health-text">160 / 160</b><div class="health"><div id="health-fill"></div></div></div></div>
-  <div class="skills-panel"><div class="dock-label"><span>ACTIVE SKILL</span><small>AUTO ATTACK</small></div><div id="skill-select"></div><span id="skill-name" hidden></span><span id="skill-icon" hidden></span></div>
-  <div class="utility-panel"><button class="dash" id="dash-button" aria-label="Dash"><b id="dash-state">DASH</b><small>SPACE</small></button><button id="pause" class="icon-btn" aria-label="Pause game">Ⅱ</button></div>
-  <div class="experience-panel"><div class="dock-label"><span id="xp-text">LEVEL 1 · 0 / 12 EXP</span><small>EXPERIENCE</small></div><div class="xp-bar"><div id="xp-fill"></div></div></div>
- </div>
- <div class="battle-help"><kbd>WASD</kbd> move <span>·</span> <kbd>1 / 2</kbd> switch skill <span>·</span> <kbd>ESC</kbd> pause</div>
- <div id="toast" aria-live="polite"></div><div id="joystick"><i></i></div>
-</div>
-<div id="overlay" hidden><section class="modal" id="modal"></section></div>
-<div id="loading"><span class="eyebrow">OPENING THE GATES</span><b>Preparing Lorencia</b><p id="load-status">Loading the original MU models…</p></div>
-<link rel="stylesheet" href="inventory.css"><script type="module" src="/src/main.ts"></script>
-</body></html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#11191b" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23101719'/%3E%3Ctext x='5' y='45' font-family='Georgia' font-weight='bold' font-size='30' fill='%23d5b98a'%3EMU%3C/text%3E%3C/svg%3E"
+    />
+    <title>MU Survivor · Lorencia</title>
+  </head>
+  <body>
+    <div id="world"></div>
+    <div id="hit-vignette"></div>
+    <div class="vignette"></div>
+    <header id="header">
+      <a class="wordmark" href="/" aria-label="MU Survivor home">MU<span>SURVIVOR</span></a>
+      <div class="header-right">
+        <span class="build-label"><i></i> LOCAL PROTOTYPE · 01</span
+        ><button class="icon-btn" id="stash">INVENTORY</button
+        ><button id="sound" class="icon-btn" aria-label="Mute audio" title="Mute audio">
+          ♪ SOUND ON</button
+        ><button id="fullscreen" class="icon-btn" aria-label="Toggle fullscreen">⛶</button>
+      </div>
+    </header>
+    <main id="menu">
+      <div class="intro">
+        <div class="eyebrow"><span></span> A NEW WAY TO RETURN TO MU</div>
+        <h1>One hero.<br />An endless horde.</h1>
+        <p>
+          The world you remember. A fight you haven’t played.<br />Choose your hero and survive the
+          fall of Lorencia.
+        </p>
+      </div>
+      <aside class="stage">
+        <span class="eyebrow">THE FIRST STAND</span>
+        <h2>01 <span>Lorencia</span></h2>
+        <div class="stage-line"></div>
+        <p>Outside the sanctuary, darkness gathers.</p>
+        <div class="stage-stats">
+          <span><b>3</b> MINUTES</span><span><b>10</b> WAVES</span><span><b>1</b> FINAL BOSS</span>
+        </div>
+      </aside>
+      <section class="selection">
+        <div class="selection-label">
+          <span class="eyebrow">CHOOSE YOUR HERO</span><span>01 — 03</span>
+        </div>
+        <div id="cards" class="cards"></div>
+        <div class="begin-row">
+          <p>
+            <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move <span>·</span> Attacks are
+            automatic <span>·</span> <kbd>SPACE</kbd> dash
+          </p>
+          <button id="begin" class="primary" disabled>PREPARING LORENCIA… <span>↗</span></button>
+        </div>
+      </section>
+      <footer>
+        <span>NO ACCOUNT. JUST SURVIVE.</span
+        ><span>WEBGL · SINGLE PLAYER · ORIGINAL MU ASSETS</span>
+      </footer>
+    </main>
+    <div id="hud" hidden>
+      <div class="hero-panel">
+        <span class="eyebrow" id="hero-name"></span>
+        <div class="small-stats"><span id="level">LV. 1</span><span id="kills">0 KILLS</span></div>
+        <div id="gear-status">Starter armor</div>
+      </div>
+      <div class="run-clock">
+        <span class="eyebrow">LORENCIA · SURVIVE</span><b id="timer">00:00</b
+        ><span id="objective">Survive 03:00 · defeat the guardian</span>
+      </div>
+      <div class="wave-panel">
+        <span class="eyebrow" id="wave">WAVE 01 / 10</span><b id="wave-title">The first shadows</b>
+        <div class="wave-progress"><i id="wave-fill"></i></div>
+        <small id="horde-count"></small>
+      </div>
+      <div id="boss-health" hidden>
+        <span>LORENCIA GUARDIAN</span>
+        <div><i id="boss-fill"></i></div>
+      </div>
+      <div class="bottom-hud">
+        <div class="vitality-panel">
+          <div class="mu-health-orb">
+            <div id="health-orb-fill"></div>
+            <b id="orb-value">160</b>
+          </div>
+          <div class="vitality-details">
+            <span>VITALITY</span><b id="health-text">160 / 160</b>
+            <div class="health"><div id="health-fill"></div></div>
+          </div>
+        </div>
+        <div class="skills-panel">
+          <div class="dock-label"><span>ACTIVE SKILL</span><small>AUTO ATTACK</small></div>
+          <div id="skill-select"></div>
+          <span id="skill-name" hidden></span><span id="skill-icon" hidden></span>
+        </div>
+        <div class="utility-panel">
+          <button class="dash" id="dash-button" aria-label="Dash">
+            <b id="dash-state">DASH</b><small>SPACE</small></button
+          ><button id="pause" class="icon-btn" aria-label="Pause game">Ⅱ</button>
+        </div>
+        <div class="experience-panel">
+          <div class="dock-label">
+            <span id="xp-text">LEVEL 1 · 0 / 12 EXP</span><small>EXPERIENCE</small>
+          </div>
+          <div class="xp-bar"><div id="xp-fill"></div></div>
+        </div>
+      </div>
+      <div class="battle-help">
+        <kbd>WASD</kbd> move <span>·</span> <kbd>1 / 2</kbd> switch skill <span>·</span>
+        <kbd>ESC</kbd> pause
+      </div>
+      <div id="toast" aria-live="polite"></div>
+      <div id="joystick"><i></i></div>
+    </div>
+    <div id="overlay" hidden><section class="modal" id="modal"></section></div>
+    <div id="loading">
+      <span class="eyebrow">OPENING THE GATES</span><b>Preparing Lorencia</b>
+      <p id="load-status">Loading the original MU models…</p>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

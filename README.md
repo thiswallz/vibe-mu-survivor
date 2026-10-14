@@ -1,100 +1,90 @@
-# MU Survivor — local proof of concept
+# MU Survivor
 
-A single-player WebGL survival game built from the supplied MU client assets. No account, database, or external service. Once the source is on your machine, the demo runs without an internet connection.
+A three-minute, single-player WebGL proof of concept built from the supplied MU client assets. Three heroes, one Lorencia stage, ten waves, five monster types and a final Guardian. No account or database is required.
 
-## Run
+## Run locally
 
-Use Node.js 20.12 or newer. From this folder:
+Use Node **24** (see `.nvmrc`; minimum 22.12). From **App**:
 
 ```sh
+npm ci
 npm start
 ```
 
-Open **http://localhost:5173**. This builds the UI and starts the local server. There are no npm dependencies to install. Stop with Ctrl+C.
+Open http://localhost:5173. `npm start` type-checks and builds the UI, shared packages and API, then starts the production server. After the first dependency installation, the built demo needs no internet connection. All models, textures, music and sounds are local.
 
-For source development:
+For development with Vite, live UI reload and TypeScript watchers:
 
 ```sh
 npm run dev
 ```
 
-Refresh the browser after editing. Use `PORT=5174 npm start` to choose another port.
+The UI uses port 5173 and proxies `/api` to the API on port 5174. Production serves everything on one origin; `HOST`, `PORT` and an optional private API proxy are configurable. See [DEPLOYMENT.md](DEPLOYMENT.md) for Railway and Docker.
 
-## Deployment
+## Play and equipment
 
-Docker, Railway, a configurable private API connection, and environment examples are included. See [DEPLOYMENT.md](DEPLOYMENT.md).
+- Move with WASD, arrows, mouse hold, or the touch joystick. Space/right click dashes; Escape pauses.
+- Attacks are automatic. Learn the second class skill from a level-up blessing and switch with 1/2. Level-ups grant combat blessings, skills and aura, **never armor**.
+- Open **Inventory** or press **I**, during a run, in character selection, or after a run. Opening it pauses active combat. Select an item and Equip or Unequip.
+- Matching dropped pieces automatically equip **only when that slot is empty**. Occupied slots keep your choice. Equipment is restricted to its class.
+- Armor has separate Helm, Armor, Pants, Gloves and Boots slots, with an original client mesh for each piece. The remaining body stays unarmored. Each enhanced piece receives its own +13/+15 shine.
+- Each class has one better weapon drop: Giant Sword, Staff of Kundun, or Silver Bow. The first regular drop is a weapon; later drops supply armor pieces. The Guardian drops a Kundun box. At most five ground item drops occur per run.
+- Kundun boxes can be opened from the inventory to receive compatible equipment. Better late-wave drops and some box contents have +13 or +15 enhancement. Jewels from an older stash remain stored for future crafting.
+- Pickups and equipment choices are saved immediately in this browser. Each hero has its own loadout and appears with that gear in character selection. End-of-run results show collected drops. Inventory persists across runs and reloads; it is local to the device and site origin.
 
-## Play
+Critical attacks have a 12% base chance, deal 50% extra damage, and display cyan numbers. Critical precision increases the chance. Combat values, item drop rules, equipment defense and box contents are simplified PoC rules.
 
-- Choose Dark Knight, Dark Wizard, or Fairy Elf.
-- Move with WASD or arrow keys. Holding the mouse on the arena also moves toward the pointer (walk nearby, run farther away). Touch devices have a joystick.
-- Attacks are automatic. Each class starts with one skill. Learn its second skill from a level-up choice, then switch with the two skill buttons or keys 1 and 2. Space or right click dashes with a three-second cooldown.
-- Collect blue experience jewels; choose a blessing each time you level up. New skills, a damaging aura, armor rewards, and +13 / +15 enhancements become available as you progress.
-- Survive ten 18-second waves and defeat the Lorencia Guardian. The guardian appears at 02:42; play continues after 03:00 if it is still alive.
-- Escape pauses; losing browser focus also pauses. Retry or choose another hero after a run.
-- Music and effects begin after your first interaction. Toggle audio at the top right.
+Survive to 03:00 and defeat the Guardian, which appears at 02:42. Play continues past three minutes if the Guardian is still alive. Up to 180 enemies are retained; the final five seconds of each 18-second wave intensify the horde. Hit feedback includes flashes, recoil and floating numbers. Monster idle, attack and death voices use the matching original client sounds, with bounded pools and distance-based volume. Lorencia bar music starts after interaction; the audio button mutes everything.
 
-The stage contains five enemy types: Spider, Budge Dragon, Bull Fighter, Hound, and Giant. The final guardian is a larger, stronger Giant. Each class has two learnable automatic skills: Dark Knight — Twisting Slash / Death Stab; Dark Wizard — Evil Spirits / Hellfire; Fairy Elf — Multiple Shot / Ice Arrow. Ice Arrow slows enemies. Skill names and visuals come from MU; combat tuning is simplified for this survivor PoC.
-
-## Monorepo architecture
+## Compiled monorepo
 
 ```text
 App/
-  package.json               npm workspaces and root commands
   apps/
-    server/src/index.mjs     local HTTP server and /api routes
-    ui/
-      public/                HTML/CSS, Three.js renderer, converted assets
-      build.mjs              produces a self-contained dist directory
-      dist/                  generated; ignored by Git
+    ui/src/                TypeScript WebGL, effects, audio and inventory UI
+    ui/src/styles/         CSS bundled by Vite
+    ui/public/assets/      converted MU assets and source provenance
+    ui/index.html          Vite entry
+    server/src/            TypeScript HTTP API, static delivery, private proxy
   packages/
-    game/src/index.js        rendering-independent game simulation
-  scripts/
-    start.mjs                builds UI, then starts the production server
-    convert-assets.py        original client → browser models/textures/audio
-  tests/
-    game.test.mjs            combat, progression, pause, dash, win/death checks
+    models/src/            shared domain models and API contracts
+    game/src/              simulation, equipment, drops, persistence and stage rules
+    sdk/src/               typed, validated API client
+  scripts/                 local build/dev orchestration and offline asset conversion
+  tests/                   tests against compiled packages; HTTP integration checks
 ```
 
-**UI:** Three.js renders the 3D arena, models, effects and character selection. HTML/CSS renders the interface. Input and audio live here. The game advances at a fixed 60-Hz simulation rate.
+Every first-party application module is TypeScript. Shared packages and server compile with `tsc` project references and declarations; Vite bundles the browser app and Three.js. Strict checking runs before the production build. The API SDK owns service requests, timeouts, response validation and errors. The storage adapter is separate from equipment and drop rules; a future account-backed implementation can replace it. See [ARCHITECTURE.md](ARCHITECTURE.md).
 
-**Shared game package:** Character/enemy definitions, movement, waves, attacks, pickups, upgrades and run outcomes. It has no DOM, Three.js, or server dependencies, so it can be tested directly and reused by a future server.
+## Development checks
 
-**Server:** Serves the UI and all assets from localhost by default; HOST and PORT configure deployment binding. It can also proxy /api to a private API service via INTERNAL_API_URL. `GET /api/health` provides readiness; `GET /api/demo` exposes basic demo metadata. Gameplay runs in the browser for this PoC; there is no authoritative multiplayer simulation. During development, the server exposes the shared game source at `/shared/game.js`; builds copy it into the UI output.
+```sh
+npm run typecheck
+npm run lint
+npm run format
+npm run format:check
+npm test
+npm run build
+npm run check
+```
 
-**Commands:** `npm start` builds and runs both parts; `npm run dev` serves sources; `npm run build` builds only the UI; `npm run serve` serves an existing build; `npm test` runs the simulation checks.
+`check` runs type checking, ESLint, Prettier verification, tests and the production build. `lint:fix` applies automatic lint fixes. The GitHub Actions workflow runs the same checks. Dependency versions are locked in `package-lock.json`.
 
-## Assets and conversion
+## Native assets
 
-The converted assets are already included under `apps/ui/public/assets`; the source client folder is not needed to run the demo. `assets/manifest.json` records the source BMD files and triangle counts. Original files remain untouched.
+Characters use the supplied unarmored `Class02` (Knight), `Class01` (Wizard), and `Class03` (Elf) parts. Skin placeholders are resolved by character class; hidden meshes are excluded. Armor reward names come from `Local/item.bmd`: Dark Phoenix (`Male18`), Grand Soul (`Male19`, including `t_PantMale19`), and Guardian (`Elf05`). Equipment mesh parts replace only their corresponding body slot. Transparent OZT variants have separate `-alpha` texture files to preserve transparency.
 
-The converter reads BMD v10 and decodes the supplied BMD v15 player animation with an offline LEA helper. Original S20 idle, walk and weapon-specific run poses are baked onto the armor meshes with quaternion interpolation. Root motion is removed and strides follow actual distance travelled; weapons attach to animated hand sockets. Attacks use sampled spin, thrust, casting and bow motions from the player animation file. During movement, ranged casts blend upper-body poses over the locomotion cycle. Attack playback speeds up with attack haste. Four walk poses are sampled for enemies. OZJ/OZT images become PNG textures. Transparent OZT variants use separate -alpha filenames so matching JPG/TGA stems do not overwrite one another. World props and weapons are converted from the client. Spell effects are custom animated WebGL trails, glow, sparks and frost/fire bursts inspired by the original skill names; original skill sounds and HUD icons remain.
+The converted files are included, so the original client directory is not required to run or deploy. `assets/manifest.json`, `armor-catalog.json` and `credits.json` record source files and texture mappings. Lorencia uses the original terrain layers, height field and placements, with a runtime filter for small/medium props and collision footprints.
 
-Lorencia uses the actual `World1/Terrain.map` texture layers, `TerrainHeight.OZB` height field, and 511 placements from `Terrain.obj`, cropped to an 80 × 80 tile region around town. Object types, transforms and scales follow the original client mapping. A runtime filter keeps only small and medium props; large structures, roofs, houses and gates are excluded. Solid props have collision footprints. Players slide along their edges, and enemies steer around them. The player starts in a free part of the plaza. Navigation remains a simple local steering system for the PoC.
+BMD v10/v15 meshes and native S20 animations are converted offline. Locomotion follows actual travel distance; attacks use the original spin, thrust, cast and bow motions. Skill effects use custom animated WebGL geometry inspired by MU names. Inventory frames, cells and empty-slot artwork come from `Data/Interface/newui_item_*` and `InventoryBox2`.
 
-Health orb, health gauge, experience fill, skill frames and skill icons use converted `Data/Interface/newui_*` assets. Wave packs intensify during the final five seconds of each 18-second wave. Up to 180 enemies are retained at once. Hit feedback includes a brief armor/body flash, recoil, floating damage, and a red edge flash when the hero takes damage. Death feedback includes a collapsing/fading model, rising soul light, sparks, and the matching original monster sound.
-
-Characters start unarmored using the native Class01 / Class02 / Class03 body pieces. Armor names are verified from the supplied S20 Local/item.bmd table. The converter resolves skin placeholder textures by class and excludes the client’s hidden meshes. Grand Soul uses t_PantMale19.bmd for its pants, matching the client mapping. One additional armor set is available per class: Dark Phoenix (`Male18`), Grand Soul (`Male19`), and Guardian (`Elf05`). +13 and +15 are render enhancements over the actual armor meshes, using the client's Chrome and Shiny textures; they are not separate model files. The aura uses `AuraWave_Blue_00` and `Shiny01` and damages nearby enemies.
-
-The bottom dock groups vitality (orb, current/maximum health and gauge), both switchable skills with cooldown indicators, dash, pause, and experience. Labels and survivor-specific controls use HTML/CSS, with layouts checked at desktop, portrait and landscape sizes.
-
-Music: `Data/Music/Pub.mp3` (Lorencia bar). Effects: `eSwingLightSword.wav`, `sEvil.wav`, `sHellFire.wav`, `SwordInertiaAttack.wav`, `eIceArrow.wav`, `Magic_Arrow_Cast_01.wav`, and `pLevelUp.wav` from `Data/Sound`.
-
-To regenerate assets with Node.js plus Python, Pillow and NumPy installed:
+To regenerate, install Python, Pillow and NumPy, keep `../Mu Eternals S20 1-2/Data` beside App, and run:
 
 ```sh
 python3 scripts/convert-assets.py
 npm run build
 ```
 
-The converter expects `../Mu Eternals S20 1-2/Data` relative to `App`. Keep the original folder there only for reconversion.
+The converter requires Node on PATH, or `MU_NODE` set to its executable. The offline LEA helper is adapted from [xulek/muonline-bmd-viewer](https://github.com/xulek/muonline-bmd-viewer), ISC attribution in `scripts/vendor/LEA-LICENSE.txt`. Three.js 0.180.0 is bundled from npm; its MIT license is retained under `apps/ui/public/vendor`. MU assets retain their original ownership.
 
-The offline LEA helper is adapted from [xulek/muonline-bmd-viewer](https://github.com/xulek/muonline-bmd-viewer) (ISC; attribution in `scripts/vendor/LEA-LICENSE.txt`). Three.js 0.180.0 is vendored for offline use. Its MIT license is in `apps/ui/public/vendor/THREE-LICENSE.txt`. MU models, textures, music and sounds come from the supplied client and retain their original ownership. This repository is an investor demonstration, not a production MU client.
-
-## Stage loot and saved inventory
-
-Up to five item drops per run: Kundun boxes and a few original MU jewels. Move close to collect. The end-of-run screen lists collected items and banks them in this browser's stash, including after defeat. Opening boxes and equipping stash items in later stages are future features. Browser storage is local to the device and site origin; the localhost stash does not migrate to Railway automatically. No account is needed.
-
-`packages/game/src/loot.js` owns the item catalog, bounded drops, collection and inventory merging; `packages/game/src/inventory.js` adapts persistence to versioned localStorage and the UI imports that adapter. `audio.js` owns native monster voice pools and attenuation. Critical attacks have a 12% base chance, deal 50% extra damage, and display larger cyan numbers; Critical precision upgrades add chance. These combat values are PoC tuning.
-
-The enhancement treatment follows the tiered light effects in [Webzen’s item upgrade guide](https://muonline.webzen.com/pt/gameinfo/guide/detail/32), with browser-rendered chrome highlights and armor-bound sparkles using the client’s effect textures. It is a PoC recreation of the visual treatment.
+The armor enhancement treatment recreates the tiered light effects described by [Webzen](https://muonline.webzen.com/pt/gameinfo/guide/detail/32), using native Chrome/Shiny textures and armor-bound highlights. This is an investor PoC rather than a full MU client implementation.

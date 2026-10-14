@@ -916,15 +916,15 @@
       "Item/HelmMale18.bmd"
     ],
     "file": "assets/models/loot-knight-helm.json",
-    "triangles": 249,
-    "height": 0.5000499999999999
+    "triangles": 198,
+    "height": 0.4114
   },
   "loot-knight-armor": {
     "source": [
       "Item/ArmorMale18.bmd"
     ],
     "file": "assets/models/loot-knight-armor.json",
-    "triangles": 410,
+    "triangles": 394,
     "height": 1.14446
   },
   "loot-knight-pants": {
@@ -932,7 +932,7 @@
       "Item/PantMale18.bmd"
     ],
     "file": "assets/models/loot-knight-pants.json",
-    "triangles": 198,
+    "triangles": 186,
     "height": 0.67809
   },
   "loot-knight-gloves": {
@@ -940,7 +940,7 @@
       "Item/GloveMale18.bmd"
     ],
     "file": "assets/models/loot-knight-gloves.json",
-    "triangles": 266,
+    "triangles": 260,
     "height": 0.5606700000000001
   },
   "loot-knight-boots": {
@@ -948,7 +948,7 @@
       "Item/BootMale18.bmd"
     ],
     "file": "assets/models/loot-knight-boots.json",
-    "triangles": 198,
+    "triangles": 186,
     "height": 0.85722
   },
   "loot-wizard-helm": {
@@ -956,15 +956,15 @@
       "Item/HelmMale19.bmd"
     ],
     "file": "assets/models/loot-wizard-helm.json",
-    "triangles": 120,
-    "height": 0.7108100000000002
+    "triangles": 74,
+    "height": 0.3668500000000001
   },
   "loot-wizard-armor": {
     "source": [
       "Item/ArmorMale19.bmd"
     ],
     "file": "assets/models/loot-wizard-armor.json",
-    "triangles": 186,
+    "triangles": 166,
     "height": 0.78
   },
   "loot-wizard-pants": {
@@ -972,7 +972,7 @@
       "Item/t_PantMale19.bmd"
     ],
     "file": "assets/models/loot-wizard-pants.json",
-    "triangles": 166,
+    "triangles": 154,
     "height": 0.8732900000000001
   },
   "loot-wizard-gloves": {
@@ -980,7 +980,7 @@
       "Item/GloveMale19.bmd"
     ],
     "file": "assets/models/loot-wizard-gloves.json",
-    "triangles": 176,
+    "triangles": 170,
     "height": 0.7307800000000001
   },
   "loot-wizard-boots": {
@@ -988,7 +988,7 @@
       "Item/BootMale19.bmd"
     ],
     "file": "assets/models/loot-wizard-boots.json",
-    "triangles": 152,
+    "triangles": 146,
     "height": 0.68984
   },
   "loot-elf-helm": {
@@ -996,7 +996,7 @@
       "Item/HelmElf05.bmd"
     ],
     "file": "assets/models/loot-elf-helm.json",
-    "triangles": 162,
+    "triangles": 98,
     "height": 0.5076800000000001
   },
   "loot-elf-armor": {
@@ -1004,7 +1004,7 @@
       "Item/ArmorElf05.bmd"
     ],
     "file": "assets/models/loot-elf-armor.json",
-    "triangles": 236,
+    "triangles": 176,
     "height": 0.60019
   },
   "loot-elf-pants": {
@@ -1012,7 +1012,7 @@
       "Item/PantElf05.bmd"
     ],
     "file": "assets/models/loot-elf-pants.json",
-    "triangles": 134,
+    "triangles": 122,
     "height": 0.78775
   },
   "loot-elf-gloves": {

@@ -19,6 +19,10 @@
     "./inventory": {
       "types": "./dist/inventory.d.ts",
       "default": "./dist/inventory.js"
+    },
+    "./stage": {
+      "types": "./dist/stage.d.ts",
+      "default": "./dist/stage.js"
     }
   },
   "dependencies": {

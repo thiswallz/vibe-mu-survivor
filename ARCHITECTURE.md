@@ -1,30 +1,42 @@
-# Local architecture
+# Application architecture
 
 ```mermaid
 flowchart LR
-  Browser[Browser UI / Three.js WebGL] -->|GET page, assets, readiness| Server[Local Node HTTP server]
-  Server --> UI[UI source or built dist]
-  Browser --> Game[Shared game simulation]
-  Converter[Offline Python converter] --> Assets[Converted MU models / textures / audio]
-  Assets --> UI
-  Tests[Node tests] --> Game
+  UI[apps/ui · TypeScript + Vite] --> Game[packages/game · simulation and equipment]
+  UI --> SDK[packages/sdk · API client]
+  SDK --> API[apps/server · Node HTTP API]
+  Game --> Models[packages/models · domain contracts]
+  SDK --> Models
+  API --> Models
+  UI --> Assets[Converted MU assets]
+  UI --> Store[Inventory storage adapter]
 ```
 
-The local server is the entry point. The root `npm start` command builds the UI and launches the server. The UI owns rendering, user input and audio; the shared game package owns simulation. The server owns HTTP delivery and the small API surface. This keeps a future server-backed mode possible without coupling game rules to Three.js or the DOM.
+The browser advances the game at a fixed 60 Hz. UI modules own Three.js rendering, animation, effects, input, native audio and inventory presentation. Shared game modules own simulation, class restrictions, per-slot equipment, automatic pickup, item merging, drop caps and stage rules. No DOM or Three.js enters those rules.
 
-There are no runtime network dependencies, authentication, persistence or database. Each new run creates a fresh in-memory state. Converted assets are ordinary JSON meshes, PNG textures, MP3 music and WAV effects. The build copies these plus vendored Three.js and shared game logic into a self-contained UI directory.
+`packages/models` defines the hero/monster IDs, equipment slots, inventory profile, native asset shapes, input, run state, discriminated game events and API responses. `packages/sdk` provides typed service calls, response validation, timeouts and structured HTTP errors. The browser uses it to load demo metadata on startup. `apps/server` serves the built UI and API; gameplay is currently client-side.
 
-## Deployment architecture
+## Equipment and persistence
+
+All six slots are independently owned: helm, armor, pants, gloves, boots and weapon. Equipped armor replaces only that native body part; untouched slots retain the base class body. Weapon meshes attach to the animated hand socket. Enhancement is a property of each item variant, so +13 on one piece never changes the whole outfit.
+
+A pickup enters inventory and auto-equips if its compatible slot is empty. Manually equipped items must be owned and match the hero. Replacing armor recalculates health/defense; replacing weapons recalculates damage without compounding modifiers. Inventory UI pauses active combat, supports equip/unequip and opening boxes, and returns to the previous battle or results screen.
+
+The persistence adapter uses a versioned profile containing inventory items and separate loadouts for the three heroes. It migrates the original stash format, rejects unowned loadout entries, and saves pickups and equipment changes immediately. This implementation is browser-local; a future authenticated service can implement the same contracts without changing game/drop logic. Multiple browser tabs are not synchronized live.
+
+## Build and checks
+
+TypeScript uses strict mode throughout. `tsc -b` builds referenced model/game/SDK/server projects with declaration files. The UI is separately type-checked and bundled by Vite. Source lives under `src`; generated output lives under ignored `dist` directories. npm workspaces resolve internal packages, and the lockfile fixes tool/dependency versions.
+
+`npm run dev` runs TypeScript watchers, the API watcher and Vite with a development API proxy. `npm start` builds before serving. `npm run check` runs the same type, lint, format, test and production-build checks used by CI. Tests import compiled packages; HTTP tests use isolated static fixtures.
+
+## Deployment
 
 ```mermaid
 flowchart LR
   Browser[Public browser] -->|HTTPS assets and /api| UI[UI Node service]
-  UI --> Dist[Built UI and MU assets]
-  UI -->|HTTP private network| API[API Node service]
+  UI --> Dist[Vite production bundle and MU assets]
+  UI -->|HTTP private network| API[Private API Node service]
 ```
 
-One container can host both roles. In split mode, SERVE_UI=false disables static delivery on the API; INTERNAL_API_URL on the UI proxies same-origin API requests to the private server. No private address reaches browser code. Both roles use one Docker image. /healthz checks the local service; /api/health on the UI verifies the upstream connection. See DEPLOYMENT.md for runtime variables and Railway setup.
-
-## Extendable game modules
-
-The shared game package contains simulation in index.js and item/drop/collection rules in loot.js. UI modules cover appearance, spell feedback, monster audio, and inventory persistence separately. Build copies every shared module. New stages can supply their own loot rules and arenas; a future account inventory backend can replace the localStorage adapter without changing drop logic. The end screen banks each run once and uses a versioned storage format. Three-minute stages retain ten waves, five-second finale surges and a final-wave Guardian.
+One container can serve both roles. In split mode, `SERVE_UI=false` disables static delivery on the API; `INTERNAL_API_URL` on the UI proxies same-origin API requests to the private server. The private address is never emitted to browser code. Both roles use one Docker image with compiled server and UI output. `/healthz` checks the local service; `/api/health` through the UI checks its upstream API. See DEPLOYMENT.md.
