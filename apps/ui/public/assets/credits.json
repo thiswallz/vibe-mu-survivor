@@ -26,5 +26,6 @@
     "Skill/Inferno01.bmd",
     "Skill/Bone01.bmd"
   ],
-  "music": "Music/Pub.mp3"
+  "music": "Music/Pub.mp3",
+  "spellRendering": "Custom WebGL effects inspired by MU skill names; apps/ui/public/effects.js"
 }

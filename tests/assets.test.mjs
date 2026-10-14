@@ -30,3 +30,19 @@ test('Lorencia terrain and object placements retain source provenance',()=>{
  assert.equal(objects.source,'World1/Terrain.obj');assert.ok(objects.objects.length>400);
  for(const model of objects.models)assert.ok(fs.existsSync(path.join(ui,'assets/models',model+'.json')));
 });
+
+test('S20 run clips contain a full forward foot stride, not an idle pose',()=>{
+ for(const id of ['knight','wizard','elf']){
+  const model=JSON.parse(fs.readFileSync(path.join(ui,'assets/models',id+'.json'))),clip=model.clips.run;let maximum=0;
+  for(const part of model.parts)for(let vertex=0;vertex<part.positions.length;vertex+=3){if(part.positions[vertex+1]>.45)continue;const forward=part.frames.slice(clip.start,clip.start+clip.count).map(frame=>frame[vertex+2]);maximum=Math.max(maximum,Math.max(...forward)-Math.min(...forward));}
+  assert.ok(maximum>.4,`${id} feet should stride at least 40 cm, got ${maximum}`);
+ }
+});
+test('arena selection excludes houses, walls and large props',async()=>{
+ const {keepArenaProp}=await import('../apps/ui/public/scene-layout.js');
+ assert.equal(keepArenaProp(115,{height:3,width:4,depth:4}),false);
+ assert.equal(keepArenaProp(133,{height:2,width:2,depth:2}),false,'invisible client markers are not scenery');
+ assert.equal(keepArenaProp(75,{height:3,width:4,depth:2}),false);
+ assert.equal(keepArenaProp(30,{height:7,width:2,depth:2}),false);
+ assert.equal(keepArenaProp(58,{height:2,width:1.5,depth:1.5}),true);
+});

@@ -31,3 +31,16 @@ test('each class can switch skills and both skills damage enemies',async()=>{
   assert.equal(setSkill(s,'invalid'),false);
  }
 });
+
+test('solid prop footprints block walking and allow sliding along their edge',async()=>{
+ const {moveEntity,positionClear}=await import('../packages/game/src/index.js');const obstacles=[{minX:1,maxX:3,minZ:-1,maxZ:1}];const actor={x:0,z:0};
+ assert.equal(positionClear(2,0,obstacles),false);
+ for(let i=0;i<100;i++)moveEntity(actor,.08,0,obstacles);
+ assert.ok(actor.x<1-.42,'walking must stop before the prop');
+ for(let i=0;i<40;i++)moveEntity(actor,.08,.08,obstacles);
+ assert.ok(actor.z>1.42,'diagonal input should slide around the footprint');
+});
+test('walking into an obstacle freezes the stride instead of running in place',()=>{
+ const s=createRun('knight');s.obstacles=[{minX:.43,maxX:2,minZ:-2,maxZ:2}];s.spawnTimer=100;
+ tick(s,1/60,{x:1});assert.equal(s.x,0);assert.equal(s.moving,false);assert.equal(s.travel,0);
+});

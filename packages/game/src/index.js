@@ -26,9 +26,17 @@ export const UPGRADES=[
  {id:'multishot', icon:'⋔', name:'Echoing strike', text:'Add a projectile or widen your slash.', apply:s=>{s.projectiles++;s.slashRange+=.5}}
 ];
 const dist=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
+export function positionClear(x,z,obstacles=[],radius=.42){return !obstacles.some(o=>x>o.minX-radius&&x<o.maxX+radius&&z>o.minZ-radius&&z<o.maxZ+radius);}
+export function moveEntity(entity,dx,dz,obstacles=[],radius=.42){
+ const beforeX=entity.x,beforeZ=entity.z;
+ // Slide along a prop's edge instead of crossing its footprint.
+ if(positionClear(entity.x+dx,entity.z,obstacles,radius))entity.x+=dx;
+ if(positionClear(entity.x,entity.z+dz,obstacles,radius))entity.z+=dz;
+ return Math.hypot(entity.x-beforeX,entity.z-beforeZ);
+}
 export function createRun(id,random=Math.random){
  const hero=CLASSES.find(c=>c.id===id); if(!hero)throw new Error('Unknown class');
- return {hero,random,skill:SKILLS[id][0].id,moving:false,walking:false,attackAnimation:0,phase:'playing',time:0,wave:1,hp:hero.hp,maxHp:hero.hp,speed:hero.speed,damage:hero.damage,cooldown:hero.cooldown,slashRange:hero.range,projectiles:id==='elf'?2:1,magnet:3.1,x:0,z:0,facing:0,enemies:[],shots:[],gems:[],events:[],kills:0,level:1,xp:0,xpNeeded:12,spawnTimer:.8,attackTimer:0,dashCooldown:0,dashTime:0,invulnerable:0,bossSpawned:false,bossDefeated:false,nextId:1,choices:[],pendingLevels:0};
+ return {hero,random,skill:SKILLS[id][0].id,moving:false,walking:false,travel:0,obstacles:[],attackAnimation:0,phase:'playing',time:0,wave:1,hp:hero.hp,maxHp:hero.hp,speed:hero.speed,damage:hero.damage,cooldown:hero.cooldown,slashRange:hero.range,projectiles:id==='elf'?2:1,magnet:3.1,x:0,z:0,facing:0,enemies:[],shots:[],gems:[],events:[],kills:0,level:1,xp:0,xpNeeded:12,spawnTimer:.8,attackTimer:0,dashCooldown:0,dashTime:0,invulnerable:0,bossSpawned:false,bossDefeated:false,nextId:1,choices:[],pendingLevels:0};
 }
 function event(s,type,data={}){s.events.push({type,...data})}
 export function spawnEnemy(s,type,elite=false){
@@ -36,7 +44,7 @@ export function spawnEnemy(s,type,elite=false){
  const def=ENEMIES[type]; const scale=1+(s.wave-1)*.095;
  const e={...def,uid:s.nextId++,type,x:Math.max(-ARENA+1,Math.min(ARENA-1,s.x+Math.cos(a)*r)),z:Math.max(-ARENA+1,Math.min(ARENA-1,s.z+Math.sin(a)*r)),hp:def.hp*scale*(elite?12:1),maxHp:def.hp*scale*(elite?12:1),elite,hit:0};
  if(elite){e.size=4.5;e.speed=2;e.damage=28;e.name='Lorencia Guardian';}
- s.enemies.push(e);return e;
+ if(!positionClear(e.x,e.z,s.obstacles,e.size*.24)){for(let i=0;i<24;i++){const a=i*Math.PI*2/24;e.x=Math.max(-ARENA+1,Math.min(ARENA-1,s.x+Math.sin(a)*r));e.z=Math.max(-ARENA+1,Math.min(ARENA-1,s.z+Math.cos(a)*r));if(positionClear(e.x,e.z,s.obstacles,e.size*.24))break;}if(!positionClear(e.x,e.z,s.obstacles,e.size*.24))return null;}s.enemies.push(e);return e;
 }
 function hurt(s,e,damage){
  if(e.hp<=0)return;e.hp-=damage;e.hit=.16;event(s,'hit',{x:e.x,z:e.z,damage});
@@ -55,12 +63,12 @@ export function tick(s,dt,input={}){
  s.attackAnimation=Math.max(0,s.attackAnimation-dt);s.invulnerable=Math.max(0,s.invulnerable-dt);s.dashCooldown=Math.max(0,s.dashCooldown-dt);s.dashTime=Math.max(0,s.dashTime-dt);
  let mx=input.x||0,mz=input.z||0,len=Math.hypot(mx,mz);if(len>1){mx/=len;mz/=len}
  if(input.dash&&s.dashCooldown===0&&len>0){s.dashTime=.2;s.dashCooldown=3;s.invulnerable=.35;event(s,'dash')}
- s.moving=len>.01;s.walking=!!input.walk||len<.5;const speed=s.speed*(s.dashTime>0?3:s.walking?.65:1);s.x=Math.max(-ARENA,Math.min(ARENA,s.x+mx*speed*dt));s.z=Math.max(-ARENA,Math.min(ARENA,s.z+mz*speed*dt));if(len>.01)s.facing=Math.atan2(mx,mz);
+ s.moving=len>.01;s.walking=!!input.walk||len<.5;const speed=s.speed*(s.dashTime>0?3:s.walking?.65:1);const dx=Math.max(-ARENA,Math.min(ARENA,s.x+mx*speed*dt))-s.x,dz=Math.max(-ARENA,Math.min(ARENA,s.z+mz*speed*dt))-s.z;const moved=moveEntity(s,dx,dz,s.obstacles);s.travel+=moved;s.moving=moved>.0001;if(len>.01)s.facing=Math.atan2(mx,mz);
  s.spawnTimer-=dt;
  if(s.spawnTimer<=0&&s.enemies.length<120){
   const unlocked=Math.min(5,1+Math.floor((s.wave-1)/2));spawnEnemy(s,Math.floor(s.random()*unlocked));s.spawnTimer=Math.max(.22,.95-s.wave*.073);
  }
- if(s.time>=270&&!s.bossSpawned){spawnEnemy(s,4,true);s.bossSpawned=true;event(s,'boss')}
+ if(s.time>=270&&!s.bossSpawned){const guardian=spawnEnemy(s,4,true);if(guardian){s.bossSpawned=true;event(s,'boss')}}
  s.attackTimer-=dt;
  const living=s.enemies.filter(e=>e.hp>0);
  if(s.attackTimer<=0&&living.length){
@@ -69,7 +77,7 @@ export function tick(s,dt,input={}){
   if(dist(nearest[0],s)<range){
    s.attackTimer=s.cooldown*skill.cooldown;s.attackAnimation=.45;s.animationSkill=skill.id;
    if(!s.moving)s.facing=Math.atan2(nearest[0].x-s.x,nearest[0].z-s.z);
-   event(s,'attack',{hero:s.hero.id,skill:skill.id,x:s.x,z:s.z,facing:s.facing});
+   event(s,'attack',{hero:s.hero.id,skill:skill.id,x:s.x,z:s.z,facing:Math.atan2(nearest[0].x-s.x,nearest[0].z-s.z),range});
    const damage=s.damage*skill.damage;
    if(skill.id==='slash'||skill.id==='hellfire'){for(const e of living)if(dist(e,s)<range+e.size*.2)hurt(s,e,damage);}
    else if(skill.id==='stab'){
@@ -86,14 +94,14 @@ export function tick(s,dt,input={}){
  for(const p of s.shots){
   p.life-=dt;const target=s.enemies.find(e=>e.uid===p.target&&e.hp>0);if(!target){p.life=0;continue}
   const d=dist(p,target);if(d<p.speed*dt+.45){
-   hurt(s,target,p.damage);if(p.skill==='icearrow'){target.slow=2.5;event(s,'ice',{x:target.x,z:target.z})}
+   hurt(s,target,p.damage);event(s,'impact',{skill:p.skill,x:target.x,z:target.z});if(p.skill==='icearrow'){target.slow=2.5;event(s,'ice',{x:target.x,z:target.z})}
    if(p.kind==='wizard'){for(const e of s.enemies)if(e.uid!==target.uid&&dist(e,target)<2.5)hurt(s,e,p.damage*.65);event(s,'burst',{x:target.x,z:target.z})}p.life=0;
   }else{p.x+=(target.x-p.x)/d*p.speed*dt;p.z+=(target.z-p.z)/d*p.speed*dt}
  }
  s.shots=s.shots.filter(p=>p.life>0);
  for(const e of s.enemies){
   if(e.hp<=0)continue;e.slow=Math.max(0,(e.slow||0)-dt);e.hit=Math.max(0,e.hit-dt);const d=dist(e,s);
-  if(d>.65){e.x+=(s.x-e.x)/d*e.speed*(e.slow>0?.45:1)*dt;e.z+=(s.z-e.z)/d*e.speed*(e.slow>0?.45:1)*dt;}
+  if(d>.65){const step=e.speed*(e.slow>0?.45:1)*dt,dx=(s.x-e.x)/d*step,dz=(s.z-e.z)/d*step;const moved=moveEntity(e,dx,dz,s.obstacles,e.size*.24);if(moved<step*.2){for(const angle of [.65,-.65,1.2,-1.2,Math.PI/2,-Math.PI/2]){const nx=dx*Math.cos(angle)-dz*Math.sin(angle),nz=dx*Math.sin(angle)+dz*Math.cos(angle);if(moveEntity(e,nx,nz,s.obstacles,e.size*.24)>step*.2)break;}}}
   if(d<.6+e.size*.27&&s.invulnerable===0){s.hp=Math.max(0,s.hp-e.damage);s.invulnerable=.7;event(s,'hurt');}
  }
  s.enemies=s.enemies.filter(e=>e.hp>0);

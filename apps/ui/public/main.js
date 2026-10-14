@@ -1,5 +1,7 @@
+import {SpellEffects} from './effects.js';
+import {keepArenaProp,solidArenaProp} from './scene-layout.js';
 import * as THREE from './vendor/three.module.js';
-import {CLASSES,ENEMIES,SKILLS,UPGRADES,createRun,tick,chooseUpgrade,setSkill,DURATION,ARENA} from './shared/game.js';
+import {CLASSES,ENEMIES,SKILLS,UPGRADES,createRun,tick,chooseUpgrade,setSkill,positionClear,DURATION,ARENA} from './shared/game.js';
 const $=id=>document.getElementById(id);
 const icons={knight:'⚔',wizard:'✦',elf:'➶'};
 let selected='knight',run=null,ready=false,muted=false,last=0,accumulator=0,toastTimer=0,dashRequested=false;
@@ -13,7 +15,7 @@ const camera=new THREE.PerspectiveCamera(43,innerWidth/innerHeight,.1,180);
 scene.add(new THREE.HemisphereLight('#c8dcc8','#243434',2.25));
 const sun=new THREE.DirectionalLight('#f0d4ad',3.1);sun.position.set(-12,22,14);scene.add(sun);
 const blue=new THREE.DirectionalLight('#73b2c8',1.4);blue.position.set(12,9,-20);scene.add(blue);
-let terrainData,objectData;const scenery=[];
+let terrainData,objectData;const scenery=[],obstacles=[];
 const assets={},textures={},loader=new THREE.TextureLoader();
 async function loadTexture(url){if(!textures[url])textures[url]=loader.loadAsync(url).then(t=>{t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy());return t;});return textures[url];}
 async function loadModel(name){
@@ -23,6 +25,7 @@ async function loadModel(name){
   if(part.frames){g.morphAttributes.position=part.frames.map(frame=>new THREE.Float32BufferAttribute(frame,3));}
   const map=part.texture?await loadTexture(part.texture):null;
   const mat=new THREE.MeshStandardMaterial({map,color:map?'#ffffff':'#b3aaa0',roughness:.83,metalness:.12,side:THREE.DoubleSide,alphaTest:.45});
+  const terrainObject=Number(name.split('-')[1]);if(name.startsWith('lorencia-')&&terrainObject<=27&&map){mat.alphaMap=map;mat.alphaTest=.12;}if(name.startsWith('lorencia-')&&[50,51].includes(terrainObject)){mat.transparent=true;mat.blending=THREE.AdditiveBlending;mat.depthWrite=false;mat.alphaTest=0;mat.emissiveMap=map;mat.emissive.set('#ffffff');mat.emissiveIntensity=.8;}
   if(name.startsWith('skill-')){mat.transparent=true;mat.blending=THREE.AdditiveBlending;mat.depthWrite=false;mat.alphaTest=0;mat.emissive.set('#666666');mat.emissiveMap=map;mat.emissiveIntensity=1.2;}const mesh=new THREE.Mesh(g,mat);template.add(mesh);
  }
  assets[name]={template,data};
@@ -33,7 +36,6 @@ function model(name,height){
  object.position.x=-(data.min[0]+data.max[0])/2*scale;object.position.z=-(data.min[2]+data.max[2])/2*scale;root.add(object);root.userData.body=object;root.userData.model=name;
  return root;
 }
-function mesh(geometry,color,extra={}){return new THREE.Mesh(geometry,new THREE.MeshStandardMaterial({color,roughness:.8,...extra}));}
 const floorGroup=new THREE.Group(),menuGroup=new THREE.Group(),playGroup=new THREE.Group();scene.add(floorGroup,menuGroup,playGroup);playGroup.visible=false;
 let heroModel;const heroPreviews={};
 function ring(radius,color){const m=new THREE.Mesh(new THREE.RingGeometry(radius-.035,radius,80),new THREE.MeshBasicMaterial({color,transparent:true,opacity:.6,side:THREE.DoubleSide,depthWrite:false}));m.rotation.x=-Math.PI/2;return m;}
@@ -44,11 +46,11 @@ function weapon(root,id){
  const name=id==='knight'?'sword':id==='wizard'?'staff':'bow';const attachment=new THREE.Group();attachment.add(assets['weapon-'+name].template.clone());root.userData.body.add(attachment);root.userData.weapon=attachment;root.userData.socket=id==='elf'?'left':'right';
 }
 const poseMatrix=new THREE.Matrix4(),poseMatrix2=new THREE.Matrix4(),posePos=new THREE.Vector3(),posePos2=new THREE.Vector3(),poseQ=new THREE.Quaternion(),poseQ2=new THREE.Quaternion(),poseScale=new THREE.Vector3();
-function setPose(root,clipName,seconds,loop=true){
+function setPose(root,clipName,seconds,loop=true,dt=1/60){
  const data=assets[root.userData.model].data;const clip=data.clips?.[clipName];if(!clip)return;
  const value=loop?(seconds*clip.fps)%clip.count:Math.min(clip.count-1,seconds/.45*(clip.count-1));const index=Math.floor(value),blend=value-index;const a=clip.start+index,b=clip.start+(loop?(index+1)%clip.count:Math.min(index+1,clip.count-1));
- root.userData.body.traverse(child=>{if(child.morphTargetInfluences){child.morphTargetInfluences.fill(0);child.morphTargetInfluences[a]=1-blend;child.morphTargetInfluences[b]=blend;}});
- const socket=data.sockets?.[root.userData.socket];if(socket&&root.userData.weapon){poseMatrix.fromArray(socket[a]).decompose(posePos,poseQ,poseScale);poseMatrix2.fromArray(socket[b]).decompose(posePos2,poseQ2,poseScale);root.userData.weapon.position.copy(posePos).lerp(posePos2,blend);root.userData.weapon.quaternion.copy(poseQ).slerp(poseQ2,blend);}
+ const weights=root.userData.poseWeights||=new Float32Array(data.parts[0].frames.length);const smoothing=1-Math.exp(-dt*22);for(let i=0;i<weights.length;i++){const desired=(i===a?1-blend:0)+(i===b?blend:0);weights[i]+=(desired-weights[i])*smoothing;}root.userData.body.traverse(child=>{if(child.morphTargetInfluences)for(let i=0;i<weights.length;i++)child.morphTargetInfluences[i]=weights[i];});
+ const socket=data.sockets?.[root.userData.socket];if(socket&&root.userData.weapon){poseMatrix.fromArray(socket[a]).decompose(posePos,poseQ,poseScale);poseMatrix2.fromArray(socket[b]).decompose(posePos2,poseQ2,poseScale);posePos.lerp(posePos2,blend);poseQ.slerp(poseQ2,blend);root.userData.weapon.position.lerp(posePos,1-Math.exp(-dt*22));root.userData.weapon.quaternion.slerp(poseQ,1-Math.exp(-dt*22));}
 }
 function heightAt(x,z){
  if(!terrainData)return 0;const size=terrainData.size,spacing=terrainData.spacing;const tx=Math.max(0,Math.min(size-.001,(x+size*spacing/2)/spacing)),ty=Math.max(0,Math.min(size-.001,(size*spacing/2-z)/spacing));const ix=Math.floor(tx),iy=Math.floor(ty),fx=tx-ix,fy=ty-iy,h=terrainData.heights;
@@ -64,7 +66,7 @@ async function world(){
  // Every prop comes from Terrain.obj, with its original type, position, rotation and scale.
  let lightCount=0;
  for(const source of objectData.objects){
-  const p=assets[source.model].template.clone();p.position.fromArray(source.position);p.rotation.set(...source.rotation);p.scale.setScalar(source.scale);floorGroup.add(p);scenery.push(p);
+  const p=assets[source.model].template.clone();p.position.fromArray(source.position);p.rotation.set(...source.rotation);p.scale.setScalar(source.scale);p.updateMatrixWorld(true);const box=new THREE.Box3().setFromObject(p);const dimensions={height:box.max.y-box.min.y,width:box.max.x-box.min.x,depth:box.max.z-box.min.z};if(!keepArenaProp(source.type,dimensions))continue;floorGroup.add(p);scenery.push(p);if(solidArenaProp(source.type,dimensions))obstacles.push({minX:box.min.x,maxX:box.max.x,minZ:box.min.z,maxZ:box.max.z});
   if([50,51,52,90].includes(source.type)&&lightCount++<6){const light=new THREE.PointLight('#f4ad69',7,7,2);light.position.copy(p.position).add(new THREE.Vector3(0,2,0));floorGroup.add(light);}
  }
  const boundary=ring(ARENA+1,'#b8be8d');boundary.position.y=.04;floorGroup.add(boundary);
@@ -84,10 +86,11 @@ function cards(){
  for(const el of document.querySelectorAll('[data-hero]'))el.onclick=()=>{selected=el.dataset.hero;cards();startMusic()};
 }
 cards();
-const enemies=new Map(),shots=new Map(),gems=new Map(),particles=[];let aura=null;
-function clearPlay(){for(const p of particles)if(p.pulse){p.m.geometry.dispose();p.m.material.dispose();}for(const child of [...playGroup.children])playGroup.remove(child);enemies.clear();shots.clear();gems.clear();particles.length=0;}
+const spellEffects=new SpellEffects(playGroup,heightAt);
+const enemies=new Map(),shots=new Map(),gems=new Map();let aura=null;
+function clearPlay(){spellEffects.clear();for(const shot of shots.values())spellEffects.disposeProjectile(shot);for(const child of [...playGroup.children])playGroup.remove(child);enemies.clear();shots.clear();gems.clear();}
 function start(){
- if(!ready)return;clearPlay();run=createRun(selected);run.x=10;heroModel=model(selected,2.4);weapon(heroModel,selected);addShadow(heroModel,1);playGroup.add(heroModel);aura=ring(1.05,run.hero.color);aura.position.y=.05;playGroup.add(aura);menuGroup.visible=false;playGroup.visible=true;$('menu').hidden=true;$('hud').hidden=false;$('overlay').hidden=true;document.body.classList.add('playing');keys.clear();stick.x=stick.z=0;pointer.active=false;camera.position.set(0,22,20);camera.lookAt(0,0,0);$('hero-name').textContent=run.hero.name.toUpperCase();$('skill-name').textContent=run.hero.skill;$('skill-icon').textContent=icons[selected];skillButtons();startMusic();toast('The gates have fallen. Survive.');
+ if(!ready)return;clearPlay();run=createRun(selected);run.obstacles=obstacles;run.x=10;for(let i=0;!positionClear(run.x,run.z,obstacles)&&i<60;i++){run.x=10+Math.cos(i*.8)*i*.2;run.z=Math.sin(i*.8)*i*.2;}heroModel=model(selected,2.4);weapon(heroModel,selected);addShadow(heroModel,1);playGroup.add(heroModel);aura=ring(1.05,run.hero.color);aura.position.y=.05;playGroup.add(aura);menuGroup.visible=false;playGroup.visible=true;$('menu').hidden=true;$('hud').hidden=false;$('overlay').hidden=true;document.body.classList.add('playing');keys.clear();stick.x=stick.z=0;pointer.active=false;camera.position.set(0,22,20);camera.lookAt(0,0,0);$('hero-name').textContent=run.hero.name.toUpperCase();$('skill-name').textContent=run.hero.skill;$('skill-icon').textContent=icons[selected];skillButtons();startMusic();toast('The gates have fallen. Survive.');
 }
 $('begin').onclick=start;
 function goMenu(){run=null;clearPlay();menuGroup.visible=true;playGroup.visible=false;$('menu').hidden=false;$('hud').hidden=true;$('overlay').hidden=true;document.body.classList.remove('playing');keys.clear();stick.x=stick.z=0;pointer.active=false;}
@@ -123,31 +126,31 @@ function input(){
  if(pointer.active&&!x&&!z){ray.setFromCamera(new THREE.Vector2(pointer.x/innerWidth*2-1,-pointer.y/innerHeight*2+1),camera);if(ray.ray.intersectPlane(floorPlane,hitPoint)){const dx=hitPoint.x-run.x,dz=hitPoint.z-run.z,d=Math.hypot(dx,dz);if(d>.8){x=dx/d;z=dz/d;walk=d<3}}}
  const dash=keys.has('Space')||dashRequested;dashRequested=false;return {x,z,dash,walk};
 }
-const shotGeo=new THREE.SphereGeometry(.14,6,5),gemGeo=new THREE.OctahedronGeometry(.18),particleGeo=new THREE.SphereGeometry(.09,4,3);
-const shotMats={wizard:new THREE.MeshBasicMaterial({color:'#a9b6ff'}),elf:new THREE.MeshBasicMaterial({color:'#b9efd2'})},gemMat=new THREE.MeshStandardMaterial({color:'#74bfdc',emissive:'#2a688e',emissiveIntensity:1.2,metalness:.5,roughness:.2});
-const particleMats={gold:new THREE.MeshBasicMaterial({color:'#edc794',transparent:true}),blue:new THREE.MeshBasicMaterial({color:'#aabaff',transparent:true}),red:new THREE.MeshBasicMaterial({color:'#d05a54',transparent:true})};
-function sparks(x,z,color='gold',count=6){for(let i=0;i<count&&particles.length<140;i++){const m=new THREE.Mesh(particleGeo,particleMats[color]);m.position.set(x,.8,z);playGroup.add(m);particles.push({m,vx:(Math.random()-.5)*6,vz:(Math.random()-.5)*6,vy:Math.random()*4,life:.45,max:.45})}}
-function pulse(x,z,color,size){const m=ring(size,color);m.position.set(x,.1,z);playGroup.add(m);particles.push({m,life:.4,max:.4,pulse:true});}
+const gemGeo=new THREE.OctahedronGeometry(.18),gemMat=new THREE.MeshStandardMaterial({color:'#74bfdc',emissive:'#2a688e',emissiveIntensity:1.2,metalness:.5,roughness:.2});
 function renderRun(dt,t){
- const s=run;t=s.time;heroModel.position.set(s.x,heightAt(s.x,s.z),s.z);setPose(heroModel,s.attackAnimation>0&&!s.moving?(s.animationSkill===SKILLS[s.hero.id][1].id?'attack2':'attack'):s.moving?(s.walking?'walk':'run'):'idle',s.attackAnimation>0&&!s.moving?.45-s.attackAnimation:t,s.attackAnimation<=0||s.moving);heroModel.rotation.y=s.facing;heroModel.visible=s.invulnerable<=0||Math.floor(t*18)%2===0;aura.position.set(s.x,heightAt(s.x,s.z)+.07,s.z);
+ const s=run;t=s.time;heroModel.position.set(s.x,heightAt(s.x,s.z),s.z);const clip=s.moving?(s.walking?'walk':'run'):'idle',clipData=assets[s.hero.id].data.clips[clip];const animationSeconds=s.moving?s.travel/(s.walking?2.9:3.8)*clipData.count/clipData.fps:t;setPose(heroModel,clip,animationSeconds,true,dt);const turn=Math.atan2(Math.sin(s.facing-heroModel.rotation.y),Math.cos(s.facing-heroModel.rotation.y));heroModel.rotation.y+=turn*(1-Math.exp(-dt*16));heroModel.userData.body.rotation.x=s.attackAnimation>0&&!s.moving?-.1*Math.sin(s.attackAnimation/.45*Math.PI):0;heroModel.visible=s.invulnerable<=0||Math.floor(t*18)%2===0;aura.position.set(s.x,heightAt(s.x,s.z)+.07,s.z);
  const desired=new THREE.Vector3(s.x,20+heightAt(s.x,s.z),s.z+18);camera.position.lerp(desired,1-Math.exp(-dt*5));camera.lookAt(s.x,heightAt(s.x,s.z),s.z);
  sync(s.enemies,enemies,e=>{const m=model(e.id,e.size);addShadow(m,e.size*.45);playGroup.add(m);return m},(m,e)=>{
   m.position.set(e.x,heightAt(e.x,e.z),e.z);m.rotation.y=Math.atan2(s.x-e.x,s.z-e.z);m.traverse(child=>{if(child.isMesh&&child.morphTargetInfluences){const phase=(t*3+e.uid*.37)%4,frame=Math.floor(phase),f=phase-frame;child.morphTargetInfluences.fill(0);child.morphTargetInfluences[frame]=1-f;child.morphTargetInfluences[(frame+1)%4]=f;}});m.scale.setScalar(e.hit>0?1.06:1);
  });
- sync(s.shots,shots,p=>{const m=assets[p.kind==='elf'?'skill-arrow':'skill-spirit'].template.clone();m.scale.setScalar(p.kind==='elf'?1.1:1.8);playGroup.add(m);return m},(m,p)=>{m.position.set(p.x,heightAt(p.x,p.z)+1,p.z);const target=s.enemies.find(e=>e.uid===p.target);if(target)m.rotation.y=Math.atan2(target.x-p.x,target.z-p.z)});
+ sync(s.shots,shots,p=>{const m=spellEffects.createProjectile(p);playGroup.add(m);return m},(m,p)=>spellEffects.moveProjectile(m,p,s.enemies.find(e=>e.uid===p.target)),m=>spellEffects.disposeProjectile(m));
  sync(s.gems,gems,g=>{const m=new THREE.Mesh(gemGeo,gemMat);playGroup.add(m);return m},(m,g)=>{m.position.set(g.x,heightAt(g.x,g.z)+.32+Math.sin(t*3+g.uid)*.06,g.z);m.rotation.y=t*1.5;});
- for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.life-=dt;if(p.life<=0){playGroup.remove(p.m);if(p.pulse){p.m.geometry.dispose();p.m.material.dispose()}particles.splice(i,1);continue}if(p.pulse){p.m.scale.setScalar(1+(1-p.life/p.max)*.6);p.m.material.opacity=p.life/p.max*.8;}else if(p.client){p.m.rotation.y+=dt*3;}else{p.m.position.x+=p.vx*dt;p.m.position.z+=p.vz*dt;p.m.position.y+=p.vy*dt;p.vy-=9*dt;p.m.scale.setScalar(p.life/p.max)}}
- $('health-orb-fill').style.clipPath=`inset(${(1-s.hp/s.maxHp)*100}% 0 0 0)`;const activeSkill=SKILLS[s.hero.id].find(k=>k.id===s.skill);$('skill-name').textContent=activeSkill.name;$('health-fill').style.width=`${s.hp/s.maxHp*100}%`;$('health-text').textContent=`${Math.ceil(s.hp)} / ${s.maxHp}`;$('level').textContent=`LV. ${s.level}`;$('kills').textContent=`${s.kills} KILLS`;$('timer').textContent=time(s.time);$('xp-fill').style.width=`${s.xp/s.xpNeeded*100}%`;$('xp-text').textContent=`LEVEL ${s.level} · ${s.xp} / ${s.xpNeeded} EXP`;$('wave').textContent=`WAVE ${String(s.wave).padStart(2,'0')} / 10`;$('wave-fill').style.width=`${(s.time%30)/30*100}%`;$('dash-state').textContent=s.dashCooldown>0?`DASH · ${s.dashCooldown.toFixed(1)}s`:'DASH READY';
+ spellEffects.update(dt);$('orb-value').textContent=Math.ceil(s.hp);$('health-orb-fill').style.clipPath=`inset(${(1-s.hp/s.maxHp)*100}% 0 0 0)`;const activeSkill=SKILLS[s.hero.id].find(k=>k.id===s.skill);$('skill-name').textContent=activeSkill.name;$('health-fill').style.width=`${s.hp/s.maxHp*100}%`;$('health-text').textContent=`${Math.ceil(s.hp)} / ${s.maxHp}`;$('level').textContent=`LV. ${s.level}`;$('kills').textContent=`${s.kills} KILLS`;$('timer').textContent=time(s.time);$('xp-fill').style.width=`${s.xp/s.xpNeeded*100}%`;$('xp-text').textContent=`LEVEL ${s.level} · ${s.xp} / ${s.xpNeeded} EXP`;$('wave').textContent=`WAVE ${String(s.wave).padStart(2,'0')} / 10`;$('wave-fill').style.width=`${(s.time%30)/30*100}%`;$('dash-state').textContent=s.dashCooldown>0?`${s.dashCooldown.toFixed(1)}s`:'DASH';$('dash-button').style.setProperty('--ready',`${(1-s.dashCooldown/3)*100}%`);for(const button of document.querySelectorAll('[data-skill]')){const skill=SKILLS[s.hero.id].find(k=>k.id===button.dataset.skill);button.style.setProperty('--cooldown',button.dataset.skill===s.skill?`${Math.min(1,Math.max(0,s.attackTimer/(s.cooldown*skill.cooldown)))*100}%`:'0%');}
  const waveNames=['The first shadows','A restless clearing','Wings in the dark','The swarm grows','Steel meets fury','No way back','The hunt begins','A wall of darkness','Giants awaken','The final stand'];$('wave-title').textContent=waveNames[s.wave-1];
  if(lastWave!==s.wave){lastWave=s.wave;toast(`Wave ${s.wave} · ${waveNames[s.wave-1]}`)}
  const boss=s.enemies.find(e=>e.elite);$('boss-health').hidden=!boss;if(boss)$('boss-fill').style.width=`${Math.max(0,boss.hp/boss.maxHp*100)}%`;
  if(s.time>=DURATION&&!s.bossDefeated)$('objective').textContent='Finish the Lorencia Guardian';else $('objective').textContent='Survive 05:00 · defeat the guardian';
  if(lastPhase!==s.phase){lastPhase=s.phase;modal();}
 }
-function sync(items,map,create,update){const ids=new Set();for(const item of items){ids.add(item.uid);let object=map.get(item.uid);if(!object){object=create(item);map.set(item.uid,object)}update(object,item)}for(const [id,object]of map)if(!ids.has(id)){playGroup.remove(object);map.delete(id)}}
-function clientEffect(name,x,z,scale=1,angle=0){const m=assets['skill-'+name].template.clone();m.scale.setScalar(scale);m.position.set(x,heightAt(x,z)+.1,z);m.rotation.y=angle;playGroup.add(m);particles.push({m,life:.45,max:.45,client:true});}
-function events(){for(const e of run.events){if(e.type==='attack'){const skill=SKILLS[run.hero.id].find(k=>k.id===e.skill);effect(skill.sound);if(e.skill==='slash')clientEffect('slash',e.x,e.z,3,e.facing);if(e.skill==='stab')clientEffect('slash',e.x,e.z,2,e.facing);if(e.skill==='hellfire')clientEffect('inferno',e.x,e.z,2.5);}
- else if(e.type==='burst'){clientEffect('fire',e.x,e.z,1.4);}else if(e.type==='ice')clientEffect('ice',e.x,e.z,.6);else if(e.type==='death')sparks(e.x,e.z);else if(e.type==='hurt')sparks(run.x,run.z,'red');else if(e.type==='level')effect('level-up');else if(e.type==='boss')toast('The Lorencia Guardian awakens.');}}
+function sync(items,map,create,update,dispose=null){const ids=new Set();for(const item of items){ids.add(item.uid);let object=map.get(item.uid);if(!object){object=create(item);map.set(item.uid,object)}update(object,item)}for(const [id,object]of map)if(!ids.has(id)){playGroup.remove(object);dispose?.(object);map.delete(id)}}
+function events(){for(const e of run.events){
+ if(e.type==='attack'){const skill=SKILLS[run.hero.id].find(k=>k.id===e.skill);effect(skill.sound);spellEffects.attack(e.skill,e.x,e.z,e.facing,e.range);}
+ else if(e.type==='impact')spellEffects.impact(e.skill,e.x,e.z);
+ else if(e.type==='death')spellEffects.burst(e.x,e.z,'#e5c392',5,.6);
+ else if(e.type==='hurt')spellEffects.burst(run.x,run.z,'#ff7f80',7,.5);
+ else if(e.type==='level')effect('level-up');
+ else if(e.type==='boss')toast('The Lorencia Guardian awakens.');
+}}
 function resize(){renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix()}addEventListener('resize',resize);
 function animate(ms){requestAnimationFrame(animate);const dt=Math.min((ms-last)/1000,.1)||.016;last=ms;const t=ms/1000;
  if(run){
@@ -159,7 +162,7 @@ function animate(ms){requestAnimationFrame(animate);const dt=Math.min((ms-last)/
  }
  for(const prop of scenery)prop.visible=prop.position.distanceTo(camera.position)<67;renderer.render(scene,camera);
 }
-async function init(){try{[terrainData,objectData]=await Promise.all([fetch('assets/lorencia-terrain.json').then(r=>r.json()),fetch('assets/lorencia-objects.json').then(r=>r.json())]);await Promise.all(['knight','wizard','elf','spider','budge','bull','hound','giant','weapon-sword','weapon-staff','weapon-bow','skill-slash','skill-arrow','skill-ice','skill-fire','skill-inferno','skill-spirit',...objectData.models].map(loadModel));$('load-status').textContent='Building the clearing…';await world();ready=true;$('loading').hidden=true;$('begin').disabled=false;$('begin').innerHTML='ENTER LORENCIA <span>↗</span>';requestAnimationFrame(animate);}catch(error){console.error(error);$('load-status').textContent=`Could not load the demo: ${error.message}. Start it with npm start from App.`;}}
+async function init(){try{[terrainData,objectData]=await Promise.all([fetch('assets/lorencia-terrain.json').then(r=>r.json()),fetch('assets/lorencia-objects.json').then(r=>r.json())]);await Promise.all(['knight','wizard','elf','spider','budge','bull','hound','giant','weapon-sword','weapon-staff','weapon-bow',...objectData.models].map(loadModel));$('load-status').textContent='Building the clearing…';await world();ready=true;$('loading').hidden=true;$('begin').disabled=false;$('begin').innerHTML='ENTER LORENCIA <span>↗</span>';requestAnimationFrame(animate);}catch(error){console.error(error);$('load-status').textContent=`Could not load the demo: ${error.message}. Start it with npm start from App.`;}}
 init();
 // Small inspectable state for local QA; no accounts, services or persisted gameplay.
-window.muDemo={get run(){return run},get ready(){return ready},get renderer(){return renderer},start,goMenu,select:id=>{if(CLASSES.some(c=>c.id===id)){selected=id;cards()}},pause};
+window.muDemo={get run(){return run},get ready(){return ready},get renderer(){return renderer},get hero(){return heroModel},get obstacles(){return obstacles},get scenery(){return scenery},get effects(){return spellEffects},start,goMenu,select:id=>{if(CLASSES.some(c=>c.id===id)){selected=id;cards()}},pause};

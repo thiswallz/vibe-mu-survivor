@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Convert the original client's unencrypted BMD v10 meshes and OZ textures.
+"""Convert the supplied MU BMD v10/v15 meshes, animation and OZ textures.
 No modification of the source client. Bone poses are baked for a small web demo.
 """
 from pathlib import Path
@@ -51,11 +51,17 @@ def parse(path):
  return meshes,bones,actions
 
 def matrices(bones,action=0,frame=0):
+ # Interpolate native bone rotations before baking, rather than repeating integer keys.
  result=[]
+ def quat(rot):
+  x,y,z=[v/2 for v in rot];cx,sx=math.cos(x),math.sin(x);cy,sy=math.cos(y),math.sin(y);cz,sz=math.cos(z),math.sin(z)
+  return np.array([sx*cy*cz-cx*sy*sz,cx*sy*cz+sx*cy*sz,cx*cy*sz-sx*sy*cz,cx*cy*cz+sx*sy*sz])
  for b in bones:
   if b is None:result.append(np.eye(4));continue
-  parent,anim=b[:2];p,rot=anim[action];rx,ry,rz=rot[frame%len(rot)];cx,sx=math.cos(rx),math.sin(rx);cy,sy=math.cos(ry),math.sin(ry);cz,sz=math.cos(rz),math.sin(rz)
-  m=np.eye(4);m[:3,:3]=[[cz*cy,cz*sy*sx-sz*cx,cz*sy*cx+sz*sx],[sz*cy,sz*sy*sx+cz*cx,sz*sy*cx-cz*sx],[-sy,cy*sx,cy*cx]];m[:3,3]=p[frame%len(p)]
+  parent,anim=b[:2];p,rot=anim[action];lo=int(math.floor(frame))%len(rot);hi=(lo+1)%len(rot);blend=frame-math.floor(frame)
+  qa=quat(rot[lo]);qb=quat(rot[hi]);qb=qb if np.dot(qa,qb)>=0 else -qb;q=qa*(1-blend)+qb*blend;q/=np.linalg.norm(q);x,y,z,w=q
+  m=np.eye(4);m[:3,:3]=[[1-2*(y*y+z*z),2*(x*y-z*w),2*(x*z+y*w)],[2*(x*y+z*w),1-2*(x*x+z*z),2*(y*z-x*w)],[2*(x*z-y*w),2*(y*z+x*w),1-2*(x*x+y*y)]]
+  m[:3,3]=np.array(p[lo])*(1-blend)+np.array(p[hi])*blend
   if parent>=0:m=result[parent]@m
   result.append(m)
  return result
@@ -78,10 +84,17 @@ def convert(key,paths,animate=False,playerRig=None):
  parts=[];bounds=[]; clips={}; matsForClips=[]
  if playerRig:
   rig,rigActions=playerRig
-  indices={"knight":(4,17,26,65,71),"wizard":(10,23,32,72,73),"elf":(8,21,30,50,50)}[key]
-  for label,action,count in zip(["idle","walk","run","attack","attack2"],indices,[4,8,8,8,8]):
-   clips[label]={"start":len(matsForClips),"count":count,"fps":count*(.7 if label=="idle" else 1.1 if label=="walk" else 1.65)}
-   matsForClips.extend(matrices(rig,action,int(i*(rigActions[action]-1)/count)) for i in range(count))
+  # S20 action layout, verified by alternating foot motion. Older 15/25 indices are idle poses here.
+  indices={"knight":(4,53,60,4,4),"wizard":(10,56,64,10,10),"elf":(8,55,62,8,8)}[key]
+  for label,action,count in zip(["idle","walk","run","attack","attack2"],indices,[8,16,16,8,8]):
+   clips[label]={"start":len(matsForClips),"count":count,"fps":count*(.65 if label=="idle" else 1.15 if label=="walk" else 1.7),"sourceAction":action}
+   for i in range(count):
+    mats=matrices(rig,action,i*(rigActions[action]-1)/count)
+    if label in ['walk','run']:
+     # Simulation supplies world movement; remove animated root translation in the ground plane.
+     root=mats[0][:2,3].copy()
+     for m in mats:m[:2,3]-=root
+    matsForClips.append(mats)
  for path in paths:
   meshes,bones,actions=parse(path);mat=matrices(bones) if actions else [np.eye(4)]*len(bones)
   # Walk is action 2 for classic monsters. Export four sampled poses.
