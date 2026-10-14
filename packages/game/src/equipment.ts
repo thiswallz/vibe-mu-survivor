@@ -77,24 +77,68 @@ export function sanitizeEquipment(
   }
   return result;
 }
+export function itemName(item: Pick<InventoryItem, 'id' | 'enhancement'>) {
+  const def = ARMOR_ITEMS[item.id];
+  return def ? `${def.name} +${item.enhancement || 0}` : item.id;
+}
+export function itemColor(item: Pick<InventoryItem, 'id' | 'enhancement'>) {
+  return (item.enhancement || 0) >= 7 ? '#ffe777' : '#dedbd0';
+}
+export function itemStats(item: Pick<InventoryItem, 'id' | 'enhancement'>) {
+  const def = ARMOR_ITEMS[item.id],
+    level = item.enhancement || 0;
+  const base: Record<EquipmentSlot, number> = {
+    helm: 20,
+    armor: 35,
+    pants: 26,
+    gloves: 12,
+    boots: 15,
+    weapon: 0,
+  };
+  const health: Record<EquipmentSlot, number> = {
+    helm: 4,
+    armor: 12,
+    pants: 7,
+    gloves: 3,
+    boots: 4,
+    weapon: 0,
+  };
+  return {
+    defense:
+      def?.slot && def.slot !== 'weapon'
+        ? base[def.slot] + level * 2 + Math.floor(level * level * 0.3)
+        : 0,
+    vitality: def?.slot && def.slot !== 'weapon' ? health[def.slot] + Math.floor(level / 3) : 0,
+    attackPower: def?.slot === 'weapon' ? 30 + level * 3 : 0,
+    requiredHero: def?.hero,
+  };
+}
+export function bagItems(run: EquipmentActor) {
+  return run.inventory
+    .map((item) => ({
+      ...item,
+      quantity:
+        item.quantity -
+        Object.values(run.equipment).filter((e) => e && itemKey(e) === itemKey(item)).length,
+    }))
+    .filter((item) => item.quantity > 0);
+}
 export function applyEquipment(run: EquipmentActor) {
-  const pieces = SLOTS.filter((slot) => slot !== 'weapon')
-    .map((slot) => run.equipment[slot])
-    .filter((piece): piece is EquippedItem => piece !== null);
-  const bonus = pieces.length * 7;
+  const pieces = Object.values(run.equipment).filter(
+    (piece): piece is EquippedItem => piece !== null,
+  );
+  const bonus = pieces.reduce((sum, piece) => sum + itemStats(piece).vitality, 0),
+    defense = pieces.reduce((sum, piece) => sum + itemStats(piece).defense, 0);
   const difference = bonus - (run.gearHp || 0);
   run.maxHp += difference;
   if (run.hp > 0) run.hp = Math.max(1, Math.min(run.maxHp, run.hp + difference));
-  const weapon = run.equipment.weapon,
-    nextWeapon = weapon ? 1.3 + (weapon.enhancement || 0) * 0.02 : 1;
+  const nextWeapon =
+    1 + (run.equipment.weapon ? itemStats(run.equipment.weapon).attackPower / 100 : 0);
   run.damage = (run.damage / (run.gearWeaponPower || 1)) * nextWeapon;
   run.gearWeaponPower = nextWeapon;
   run.gearHp = bonus;
-  run.gearDefense = Math.min(
-    0.38,
-    pieces.reduce((sum, item) => sum + 0.035 + (item.enhancement || 0) * 0.0015, 0),
-  );
-  run.armorEquipped = pieces.length > 0;
+  run.gearDefense = Math.min(0.45, defense / (500 + defense));
+  run.armorEquipped = pieces.some((p) => ARMOR_ITEMS[p.id].slot !== 'weapon');
   run.enhancement = Math.max(0, ...pieces.map((i) => i.enhancement || 0));
 }
 export function equipItem(run: EquipmentActor, item: InventoryItem | EquippedItem) {

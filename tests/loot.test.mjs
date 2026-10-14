@@ -95,3 +95,12 @@ test('nearby monsters emit their species voice and attack identity', () => {
   assert.ok(s.events.some((e) => e.type === 'monster-idle' && e.id === 'budge'));
   assert.ok(s.events.some((e) => e.type === 'monster-attack' && e.id === 'budge'));
 });
+
+test('enhancement rolls cover every level from zero to fifteen', async () => {
+  const { rollEnhancement } = await import('../packages/game/dist/loot.js');
+  for (let level = 0; level <= 15; level++)
+    assert.equal(
+      rollEnhancement(() => (level + 0.5) / 16),
+      level,
+    );
+});

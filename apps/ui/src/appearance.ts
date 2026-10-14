@@ -47,16 +47,17 @@ export function enhanceArmor(
     mat.metalness = activeLevel ? 0.48 : 0.12;
     mat.emissiveMap = activeLevel ? mat.map : null;
     mat.emissive.set(activeLevel ? '#ffffff' : '#000000');
-    mat.emissiveIntensity = activeLevel === 15 ? 0.62 : activeLevel === 13 ? 0.36 : 0;
+    mat.emissiveIntensity =
+      activeLevel >= 7 ? 0.08 + (activeLevel - 7) * 0.055 : activeLevel * 0.007;
     original.userData.baseEmissive = mat.emissive.clone();
     original.userData.baseIntensity = mat.emissiveIntensity;
     mat.needsUpdate = true;
-    if (!activeLevel) continue;
+    if (activeLevel < 7) continue;
     const material = new THREE.MeshMatcapMaterial({
       matcap: chrome,
       color: activeLevel === 15 ? '#fff5e0' : '#ffe1a3',
       transparent: true,
-      opacity: activeLevel === 15 ? 0.55 : 0.36,
+      opacity: 0.06 + (activeLevel - 7) * 0.055,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
       side: THREE.DoubleSide,
@@ -78,7 +79,7 @@ export function enhanceArmor(
     overlay.userData.clock = clock;
     original.add(overlay);
     original.userData.overlay = overlay;
-    if (shiny)
+    if (shiny && activeLevel >= 13)
       for (let i = 0; i < (activeLevel === 15 ? 2 : 1); i++) {
         const glow = new THREE.Sprite(
           new THREE.SpriteMaterial({
@@ -109,7 +110,7 @@ export function updateArmor(root: THREE.Group, time: number) {
     if (mesh.userData.chrome) {
       mesh.userData.clock.value = time;
       (mesh.material as THREE.MeshMatcapMaterial).opacity =
-        (mesh.userData.level === 15 ? 0.55 : 0.36) + Math.sin(time * 2) * 0.06;
+        0.06 + (mesh.userData.level - 7) * 0.055 + Math.sin(time * 2) * 0.06;
     }
   });
   for (const spark of root.userData.armorSparkles) {

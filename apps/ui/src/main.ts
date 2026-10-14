@@ -1,3 +1,4 @@
+import { createItemPreview } from './item-preview.js';
 import './styles/style.css';
 import './styles/hud.css';
 import './styles/inventory.css';
@@ -19,6 +20,8 @@ import type {
 } from '@mu-survivor/models';
 import { createInventoryPanel } from './inventory-panel.js';
 import {
+  itemName,
+  itemColor,
   SLOTS,
   equipItem,
   unequipSlot,
@@ -387,6 +390,9 @@ function refreshPreviewGear() {
     addShadow(p, 1.4);
   }
 }
+const dropLabels = document.createElement('div');
+dropLabels.id = 'drop-labels';
+document.body.append(dropLabels);
 const itemIcons: Record<string, string> = {};
 function makeItemIcons() {
   const iconsRenderer = new THREE.WebGLRenderer({
@@ -543,7 +549,10 @@ function closeInventory() {
   } else if (run) modal();
   inventoryWasPlaying = false;
 }
+let itemPreview: ReturnType<typeof createItemPreview>;
 const inventoryPanel = createInventoryPanel({
+  preview: (item, host) => itemPreview.show(item, host),
+  stopPreview: () => itemPreview?.hide(),
   context: inventoryContext,
   icon: (id) => itemIcons[id],
   equip: (item) => {
@@ -627,6 +636,7 @@ const enemies = new Map<number, THREE.Group>(),
   lootModels = new Map<number, THREE.Group>();
 let aura: THREE.Mesh, protectionAura: THREE.Group;
 function clearPlay() {
+  dropLabels.replaceChildren();
   appearanceKey = '';
   spellEffects.clear();
   if (heroModel) disposeActor(heroModel);
@@ -979,6 +989,12 @@ function renderRun(dt: number, t: number) {
     (drop) => {
       const m = model(ITEMS[drop.id].model, drop.id === 'kundun-box' ? 0.65 : 0.7, true);
       prepareActor(m);
+      if (ITEMS[drop.id].kind === 'equipment') {
+        m.userData.body.traverse((mesh: THREE.Mesh) => {
+          if (mesh.isMesh) mesh.userData.armor = true;
+        });
+        enhanceArmor(m, drop.enhancement, chromeTexture, shinyTexture);
+      }
       playGroup.add(m);
       return m;
     },
@@ -989,9 +1005,20 @@ function renderRun(dt: number, t: number) {
         drop.z,
       );
       m.rotation.y = t * 0.7;
+      updateArmor(m, t);
     },
     (m) => disposeActor(m),
   );
+  dropLabels.innerHTML = s.loot.drops
+    .map((drop) => {
+      const point = new THREE.Vector3(drop.x, heightAt(drop.x, drop.z) + 1.2, drop.z).project(
+        camera,
+      );
+      if (point.z > 1 || point.z < -1) return '';
+      const def = ITEMS[drop.id];
+      return `<span class="drop-label" style="left:${(point.x * 0.5 + 0.5) * innerWidth}px;top:${(-point.y * 0.5 + 0.5) * innerHeight}px;color:${def.kind === 'equipment' ? itemColor(drop) : def.color}">${def.kind === 'equipment' ? itemName(drop) : def.name}</span>`;
+    })
+    .join('');
   sync(
     s.gems,
     gems,
@@ -1215,6 +1242,11 @@ async function init() {
     );
     $('load-status').textContent = 'Building the clearing…';
     await world();
+    itemPreview = createItemPreview(
+      (id) => assets[ITEMS[id].model].template,
+      chromeTexture,
+      shinyTexture,
+    );
     makeItemIcons();
     ready = true;
     refreshPreviewGear();

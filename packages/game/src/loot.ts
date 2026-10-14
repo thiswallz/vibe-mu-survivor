@@ -68,13 +68,7 @@ export function dropLoot(
       ? `${run.hero.id}-${run.dropSlots[index]}`
       : ['kundun-box', 'jewel-bless', 'jewel-soul', 'jewel-life'][index];
   const enhancement =
-    ITEMS[id].kind === 'equipment'
-      ? (run?.wave || 1) >= 8
-        ? 15
-        : (run?.wave || 1) >= 5
-          ? 13
-          : 0
-      : 0;
+    ITEMS[id].kind === 'equipment' ? rollEnhancement(run?.random || Math.random) : 0;
   const drop = { uid: nextId(), id, enhancement, x: enemy.x, z: enemy.z };
   state.dropped++;
   state.drops.push(drop);
@@ -127,12 +121,15 @@ export function openKundun(
 ) {
   const rest = takeItem(items, { id: 'kundun-box' });
   if (!rest) return null;
-  const roll = random(),
-    reward = {
-      id: `${hero}-${slot}`,
-      enhancement: roll < 0.15 ? 15 : roll < 0.5 ? 13 : 0,
-      quantity: 1,
-    };
+  const reward = {
+    id: `${hero}-${slot}`,
+    enhancement: rollEnhancement(random),
+    quantity: 1,
+  };
   if (!ITEMS[reward.id]) return null;
   return { items: mergeInventory(rest, [reward]), reward };
+}
+
+export function rollEnhancement(random = Math.random) {
+  return Math.max(0, Math.min(15, Math.floor(random() * 16)));
 }

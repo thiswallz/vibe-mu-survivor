@@ -25,11 +25,11 @@ The UI uses port 5173 and proxies `/api` to the API on port 5174. Production ser
 
 - Move with WASD, arrows, mouse hold, or the touch joystick. Space/right click dashes; Escape pauses.
 - Attacks are automatic. Learn the second class skill from a level-up blessing and switch with 1/2. Level-ups grant combat blessings, skills and aura, **never armor**.
-- Open **Inventory** or press **I**, during a run, in character selection, or after a run. Opening it pauses active combat. Select an item and Equip or Unequip.
+- Open **Inventory** or press **I**, during a run, in character selection, or after a run. Opening it pauses active combat. Click an item for its stats dialog; hover for a rotating 3D preview. Drag pieces from the bag to matching slots and back, or use Equip/Unequip. Equipped copies leave the bag. Drop names use MU-style enhancement colors.
 - Matching dropped pieces automatically equip **only when that slot is empty**. Occupied slots keep your choice. Equipment is restricted to its class.
 - Armor has separate Helm, Armor, Pants, Gloves and Boots slots, with an original client mesh for each piece. The remaining body stays unarmored. Each enhanced piece receives its own +13/+15 shine.
 - Each class has one better weapon drop: Giant Sword, Staff of Kundun, or Silver Bow. The first regular drop is a weapon; later drops supply armor pieces. The Guardian drops a Kundun box. At most five ground item drops occur per run.
-- Kundun boxes can be opened from the inventory to receive compatible equipment. Better late-wave drops and some box contents have +13 or +15 enhancement. Jewels from an older stash remain stored for future crafting.
+- Kundun boxes can be opened from the inventory to receive compatible equipment. Equipment drops and box contents roll enhancements from +0 through +15. Each piece has increasing defense/vitality or weapon attack stats. Jewels from an older stash remain stored for future crafting.
 - Pickups and equipment choices are saved immediately in this browser. Each hero has its own loadout and appears with that gear in character selection. End-of-run results show collected drops. Inventory persists across runs and reloads; it is local to the device and site origin.
 
 Critical attacks have a 12% base chance, deal 50% extra damage, and display cyan numbers. Critical precision increases the chance. Combat values, item drop rules, equipment defense and box contents are simplified PoC rules.

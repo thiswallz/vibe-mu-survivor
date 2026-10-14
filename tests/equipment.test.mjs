@@ -7,6 +7,8 @@ import {
   unequipSlot,
   itemKey,
   SLOTS,
+  itemStats,
+  bagItems,
 } from '../packages/game/dist/equipment.js';
 import { readProfile, saveRunInventory } from '../packages/game/dist/inventory.js';
 import { openKundun } from '../packages/game/dist/loot.js';
@@ -20,12 +22,12 @@ test('empty armor slots auto-equip owned pickups; occupied slots keep the chosen
     better = { id: 'knight-helm', enhancement: 15, quantity: 1 };
   s.inventory = [first, better];
   assert.ok(autoEquip(s, first));
-  assert.equal(s.maxHp, 167);
+  assert.equal(s.maxHp, 160 + itemStats(s.equipment.helm).vitality);
   assert.equal(s.equipment.helm.enhancement, 0);
   assert.equal(autoEquip(s, better), false);
   assert.equal(s.equipment.helm.enhancement, 0);
   assert.ok(equipItem(s, better));
-  assert.equal(s.maxHp, 167);
+  assert.equal(s.maxHp, 160 + itemStats(s.equipment.helm).vitality);
   assert.equal(s.equipment.helm.enhancement, 15);
   unequipSlot(s, 'helm');
   assert.equal(s.equipment.helm, null);
@@ -71,7 +73,7 @@ test('actual first drop is a weapon, collects and equips during play, and persis
 });
 test('opening a Kundun consumes exactly one box and creates an owned compatible item', () => {
   const result = openKundun([{ id: 'kundun-box', quantity: 2 }], 'elf', 'boots', () => 0.1);
-  assert.equal(result.reward.enhancement, 15);
+  assert.equal(result.reward.enhancement, 1);
   assert.equal(result.reward.id, 'elf-boots');
   assert.equal(result.items.find((i) => i.id === 'kundun-box').quantity, 1);
   assert.ok(result.items.some((i) => itemKey(i) === itemKey(result.reward)));
@@ -93,4 +95,18 @@ test('old stash data migrates and fabricated equipment is not loaded', () => {
     }),
   );
   assert.equal(readProfile(storage).loadouts.elf.helm, null);
+});
+
+test('equipped copies disappear from the bag and stats increase with every enhancement', () => {
+  const s = createRun('knight');
+  s.inventory = [{ id: 'knight-helm', quantity: 1, enhancement: 0 }];
+  equipItem(s, s.inventory[0]);
+  assert.equal(bagItems(s).length, 0);
+  unequipSlot(s, 'helm');
+  assert.equal(bagItems(s).length, 1);
+  for (let level = 1; level <= 15; level++)
+    assert.ok(
+      itemStats({ id: 'knight-helm', enhancement: level }).defense >
+        itemStats({ id: 'knight-helm', enhancement: level - 1 }).defense,
+    );
 });
