@@ -63,12 +63,12 @@ test('actual first drop is a weapon, collects and equips during play, and persis
   enemy.z = 0;
   tick(s, 0.01);
   assert.equal(s.loot.collected.length, 1);
-  assert.equal(s.loot.collected[0].id, 'knight-weapon');
-  assert.equal(s.equipment.weapon.id, 'knight-weapon');
+  assert.equal(s.loot.collected[0].id, 'knight-katana');
+  assert.equal(s.equipment.weapon.id, 'knight-katana');
   const storage = memory();
   assert.ok(saveRunInventory(s, storage));
   const profile = readProfile(storage);
-  assert.equal(profile.loadouts.knight.weapon.id, 'knight-weapon');
+  assert.equal(profile.loadouts.knight.weapon.id, 'knight-katana');
   assert.equal(profile.loadouts.wizard.weapon, null);
   assert.ok(SLOTS.every((slot) => slot in profile.loadouts.elf));
 });

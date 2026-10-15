@@ -167,3 +167,143 @@ select {
     width: 230px;
   }
 }
+.stage {
+  top: 100px;
+  width: 360px;
+  max-height: calc(100vh - 380px);
+  overflow: auto;
+  pointer-events: auto;
+}
+.stage h2 {
+  margin: 10px 0;
+}
+#map-loot {
+  margin-top: 16px;
+}
+#map-loot h3 {
+  font:
+    17px Georgia,
+    serif;
+  color: #f1ddb4;
+  margin: 0 0 7px;
+}
+.loot-caption {
+  font-size: 10px;
+  line-height: 1.5;
+  color: #b3bcaf;
+}
+.map-best-loot {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  margin: 10px 0;
+}
+.map-loot-card {
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  column-gap: 5px;
+  align-items: center;
+  padding: 7px;
+  background: #121e1ce8;
+  border: 1px solid #826c494d;
+}
+.map-loot-card img {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  grid-row: 1 / 3;
+}
+.map-loot-card span {
+  font-size: 10px;
+  color: #e9d4a7;
+}
+.map-loot-card small {
+  font-size: 8px;
+  color: #9cb9a4;
+}
+#map-loot summary {
+  cursor: pointer;
+  font-size: 11px;
+  color: #e9cd94;
+  padding: 8px 0;
+}
+.map-drop-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 180px;
+  overflow: auto;
+}
+.map-drop-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  border-top: 1px solid #6f765d44;
+  padding: 5px 0;
+  font-size: 10px;
+}
+.map-drop-list li small {
+  text-align: right;
+  color: #b7c5b3;
+}
+.map-drop-list .incompatible {
+  opacity: 0.55;
+}
+@media (max-width: 800px) {
+  .stage {
+    right: 12px;
+    width: 250px;
+    top: 105px;
+    max-height: calc(100vh - 370px);
+  }
+  .stage-stats {
+    display: none;
+  }
+  .intro p {
+    display: none;
+  }
+}
+@media (max-width: 520px) {
+  .stage {
+    width: 46%;
+    padding: 10px;
+    max-height: calc(100vh - 390px);
+  }
+  .map-best-loot {
+    grid-template-columns: 1fr;
+  }
+  .map-loot-card:nth-child(n + 4) {
+    display: none;
+  }
+}
+.stage .stage-stats,
+.stage .stage-line {
+  display: none;
+}
+#stage-name {
+  font:
+    normal 26px/1.12 Georgia,
+    serif;
+  margin: 8px 0;
+}
+.stage > p {
+  margin: 6px 0;
+  font-size: 10px;
+  line-height: 1.35;
+}
+.map-loot-card {
+  padding: 5px;
+  grid-template-columns: 28px 1fr;
+}
+.map-loot-card img {
+  width: 28px;
+  height: 28px;
+}
+.map-loot-card small {
+  font-size: 7px;
+}
+@media (max-height: 800px) {
+  .stage #stage-description {
+    display: none;
+  }
+}

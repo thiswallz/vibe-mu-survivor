@@ -1206,5 +1206,365 @@
     "file": "assets/models/devias-5.json",
     "triangles": 26,
     "height": 0.62072
+  },
+  "knight-leather-armor": {
+    "source": [
+      "Player\\HelmMale06.bmd",
+      "Player\\ArmorMale06.bmd",
+      "Player\\PantMale06.bmd",
+      "Player\\GloveMale06.bmd",
+      "Player\\BootMale06.bmd"
+    ],
+    "file": "assets/models/knight-leather-armor.json",
+    "triangles": 632,
+    "height": 1.9415300000000002
+  },
+  "loot-knight-leather-helm": {
+    "source": [
+      "Item\\HelmMale06.bmd"
+    ],
+    "file": "assets/models/loot-knight-leather-helm.json",
+    "triangles": 69,
+    "height": 0.49795999999999996
+  },
+  "loot-knight-leather-armor": {
+    "source": [
+      "Item\\ArmorMale06.bmd"
+    ],
+    "file": "assets/models/loot-knight-leather-armor.json",
+    "triangles": 122,
+    "height": 0.89805
+  },
+  "loot-knight-leather-pants": {
+    "source": [
+      "Item\\PantMale06.bmd"
+    ],
+    "file": "assets/models/loot-knight-leather-pants.json",
+    "triangles": 110,
+    "height": 0.6676
+  },
+  "loot-knight-leather-gloves": {
+    "source": [
+      "Item\\GloveMale06.bmd"
+    ],
+    "file": "assets/models/loot-knight-leather-gloves.json",
+    "triangles": 142,
+    "height": 0.51624
+  },
+  "loot-knight-leather-boots": {
+    "source": [
+      "Item\\BootMale06.bmd"
+    ],
+    "file": "assets/models/loot-knight-leather-boots.json",
+    "triangles": 118,
+    "height": 0.5698300000000001
+  },
+  "knight-plate-armor": {
+    "source": [
+      "Player\\HelmMale10.bmd",
+      "Player\\ArmorMale10.bmd",
+      "Player\\PantMale10.bmd",
+      "Player\\GloveMale10.bmd",
+      "Player\\BootMale10.bmd"
+    ],
+    "file": "assets/models/knight-plate-armor.json",
+    "triangles": 655,
+    "height": 2.02787
+  },
+  "loot-knight-plate-helm": {
+    "source": [
+      "Item\\HelmMale10.bmd"
+    ],
+    "file": "assets/models/loot-knight-plate-helm.json",
+    "triangles": 39,
+    "height": 0.47328999999999977
+  },
+  "loot-knight-plate-armor": {
+    "source": [
+      "Item\\ArmorMale10.bmd"
+    ],
+    "file": "assets/models/loot-knight-plate-armor.json",
+    "triangles": 174,
+    "height": 0.8154600000000001
+  },
+  "loot-knight-plate-pants": {
+    "source": [
+      "Item\\PantMale10.bmd"
+    ],
+    "file": "assets/models/loot-knight-plate-pants.json",
+    "triangles": 82,
+    "height": 0.6800399999999999
+  },
+  "loot-knight-plate-gloves": {
+    "source": [
+      "Item\\GloveMale10.bmd"
+    ],
+    "file": "assets/models/loot-knight-plate-gloves.json",
+    "triangles": 174,
+    "height": 0.65626
+  },
+  "loot-knight-plate-boots": {
+    "source": [
+      "Item\\BootMale10.bmd"
+    ],
+    "file": "assets/models/loot-knight-plate-boots.json",
+    "triangles": 186,
+    "height": 0.70914
+  },
+  "wizard-pad-armor": {
+    "source": [
+      "Player\\HelmMale03.bmd",
+      "Player\\ArmorMale03.bmd",
+      "Player\\PantMale03.bmd",
+      "Player\\GloveMale03.bmd",
+      "Player\\BootMale03.bmd"
+    ],
+    "file": "assets/models/wizard-pad-armor.json",
+    "triangles": 604,
+    "height": 1.9192500000000001
+  },
+  "loot-wizard-pad-helm": {
+    "source": [
+      "Item\\HelmMale03.bmd"
+    ],
+    "file": "assets/models/loot-wizard-pad-helm.json",
+    "triangles": 86,
+    "height": 0.38049
+  },
+  "loot-wizard-pad-armor": {
+    "source": [
+      "Item\\ArmorMale03.bmd"
+    ],
+    "file": "assets/models/loot-wizard-pad-armor.json",
+    "triangles": 86,
+    "height": 0.44116
+  },
+  "loot-wizard-pad-pants": {
+    "source": [
+      "Item\\PantMale03.bmd"
+    ],
+    "file": "assets/models/loot-wizard-pad-pants.json",
+    "triangles": 120,
+    "height": 0.74401
+  },
+  "loot-wizard-pad-gloves": {
+    "source": [
+      "Item\\GloveMale03.bmd"
+    ],
+    "file": "assets/models/loot-wizard-pad-gloves.json",
+    "triangles": 142,
+    "height": 0.6507400000000001
+  },
+  "loot-wizard-pad-boots": {
+    "source": [
+      "Item\\BootMale03.bmd"
+    ],
+    "file": "assets/models/loot-wizard-pad-boots.json",
+    "triangles": 126,
+    "height": 0.73075
+  },
+  "wizard-legendary-armor": {
+    "source": [
+      "Player\\HelmMale04.bmd",
+      "Player\\ArmorMale04.bmd",
+      "Player\\PantMale04.bmd",
+      "Player\\GloveMale04.bmd",
+      "Player\\BootMale04.bmd"
+    ],
+    "file": "assets/models/wizard-legendary-armor.json",
+    "triangles": 642,
+    "height": 1.9862799999999998
+  },
+  "loot-wizard-legendary-helm": {
+    "source": [
+      "Item\\HelmMale04.bmd"
+    ],
+    "file": "assets/models/loot-wizard-legendary-helm.json",
+    "triangles": 61,
+    "height": 0.35913000000000017
+  },
+  "loot-wizard-legendary-armor": {
+    "source": [
+      "Item\\ArmorMale04.bmd"
+    ],
+    "file": "assets/models/loot-wizard-legendary-armor.json",
+    "triangles": 147,
+    "height": 0.6160100000000002
+  },
+  "loot-wizard-legendary-pants": {
+    "source": [
+      "Item\\PantMale04.bmd"
+    ],
+    "file": "assets/models/loot-wizard-legendary-pants.json",
+    "triangles": 105,
+    "height": 0.8262799999999999
+  },
+  "loot-wizard-legendary-gloves": {
+    "source": [
+      "Item\\GloveMale04.bmd"
+    ],
+    "file": "assets/models/loot-wizard-legendary-gloves.json",
+    "triangles": 158,
+    "height": 0.6080199999999999
+  },
+  "loot-wizard-legendary-boots": {
+    "source": [
+      "Item\\BootMale04.bmd"
+    ],
+    "file": "assets/models/loot-wizard-legendary-boots.json",
+    "triangles": 126,
+    "height": 0.62991
+  },
+  "elf-vine-armor": {
+    "source": [
+      "Player\\HelmElf01.bmd",
+      "Player\\ArmorElf01.bmd",
+      "Player\\PantElf01.bmd",
+      "Player\\GloveElf01.bmd",
+      "Player\\BootElf01.bmd"
+    ],
+    "file": "assets/models/elf-vine-armor.json",
+    "triangles": 574,
+    "height": 1.9780499999999999
+  },
+  "loot-elf-vine-helm": {
+    "source": [
+      "Item\\HelmElf01.bmd"
+    ],
+    "file": "assets/models/loot-elf-vine-helm.json",
+    "triangles": 58,
+    "height": 0.24461999999999984
+  },
+  "loot-elf-vine-armor": {
+    "source": [
+      "Item\\ArmorElf01.bmd"
+    ],
+    "file": "assets/models/loot-elf-vine-armor.json",
+    "triangles": 54,
+    "height": 0.3028599999999999
+  },
+  "loot-elf-vine-pants": {
+    "source": [
+      "Item\\PantElf01.bmd"
+    ],
+    "file": "assets/models/loot-elf-vine-pants.json",
+    "triangles": 44,
+    "height": 0.3266800000000001
+  },
+  "loot-elf-vine-gloves": {
+    "source": [
+      "Item\\GloveElf01.bmd"
+    ],
+    "file": "assets/models/loot-elf-vine-gloves.json",
+    "triangles": 146,
+    "height": 0.5084599999999999
+  },
+  "loot-elf-vine-boots": {
+    "source": [
+      "Item\\BootElf01.bmd"
+    ],
+    "file": "assets/models/loot-elf-vine-boots.json",
+    "triangles": 124,
+    "height": 0.6895399999999999
+  },
+  "elf-spirit-armor": {
+    "source": [
+      "Player\\HelmElf04.bmd",
+      "Player\\ArmorElf04.bmd",
+      "Player\\PantElf04.bmd",
+      "Player\\GloveElf04.bmd",
+      "Player\\BootElf04.bmd"
+    ],
+    "file": "assets/models/elf-spirit-armor.json",
+    "triangles": 644,
+    "height": 2.01619
+  },
+  "loot-elf-spirit-helm": {
+    "source": [
+      "Item\\HelmElf04.bmd"
+    ],
+    "file": "assets/models/loot-elf-spirit-helm.json",
+    "triangles": 68,
+    "height": 0.37839999999999985
+  },
+  "loot-elf-spirit-armor": {
+    "source": [
+      "Item\\ArmorElf04.bmd"
+    ],
+    "file": "assets/models/loot-elf-spirit-armor.json",
+    "triangles": 120,
+    "height": 0.63002
+  },
+  "loot-elf-spirit-pants": {
+    "source": [
+      "Item\\PantElf04.bmd"
+    ],
+    "file": "assets/models/loot-elf-spirit-pants.json",
+    "triangles": 94,
+    "height": 0.71497
+  },
+  "loot-elf-spirit-gloves": {
+    "source": [
+      "Item\\GloveElf04.bmd"
+    ],
+    "file": "assets/models/loot-elf-spirit-gloves.json",
+    "triangles": 174,
+    "height": 0.54585
+  },
+  "loot-elf-spirit-boots": {
+    "source": [
+      "Item\\BootElf04.bmd"
+    ],
+    "file": "assets/models/loot-elf-spirit-boots.json",
+    "triangles": 142,
+    "height": 0.7136199999999999
+  },
+  "loot-knight-katana": {
+    "source": [
+      "Item\\Sword04.bmd"
+    ],
+    "file": "assets/models/loot-knight-katana.json",
+    "triangles": 72,
+    "height": 0.6418
+  },
+  "loot-knight-falchion": {
+    "source": [
+      "Item\\Sword08.bmd"
+    ],
+    "file": "assets/models/loot-knight-falchion.json",
+    "triangles": 104,
+    "height": 0.36265000000000003
+  },
+  "loot-wizard-serpent-staff": {
+    "source": [
+      "Item\\Staff03.bmd"
+    ],
+    "file": "assets/models/loot-wizard-serpent-staff.json",
+    "triangles": 68,
+    "height": 0.26733
+  },
+  "loot-wizard-legendary-staff": {
+    "source": [
+      "Item\\Staff06.bmd"
+    ],
+    "file": "assets/models/loot-wizard-legendary-staff.json",
+    "triangles": 308,
+    "height": 0.49871
+  },
+  "loot-elf-elven-bow": {
+    "source": [
+      "Item\\Bow03.bmd"
+    ],
+    "file": "assets/models/loot-elf-elven-bow.json",
+    "triangles": 82,
+    "height": 0.8898
+  },
+  "loot-elf-tiger-bow": {
+    "source": [
+      "Item\\Bow05.bmd"
+    ],
+    "file": "assets/models/loot-elf-tiger-bow.json",
+    "triangles": 196,
+    "height": 0.93133
   }
 }

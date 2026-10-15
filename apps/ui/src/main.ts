@@ -1,3 +1,4 @@
+import { mapLootSettings } from '@mu-survivor/game/map-loot';
 import { followCompanion } from './companion.js';
 import { createWorldSelection } from './world-selection.js';
 import { DEFAULT_STAGE } from '@mu-survivor/game/stage';
@@ -7,12 +8,12 @@ import { createVaultPanel } from './vault-panel.js';
 import { isGuest, readVault, transferItem } from './account-session.js';
 import { activeCharacter } from './account-session.js';
 import { mountAccountFlow } from './account-flow.js';
-import './styles/accounts.css';
 import { createCharacterPanel } from './character-panel.js';
 import { createItemPreview } from './item-preview.js';
 import './styles/style.css';
 import './styles/hud.css';
 import './styles/inventory.css';
+import './styles/accounts.css';
 import { createMuApiClient } from '@mu-survivor/sdk';
 import type {
   HeroId,
@@ -331,11 +332,14 @@ function attackPose(
 let appearanceKey = '';
 function equippedActor(id: HeroId, equipment: Equipment, height: number) {
   const base = assets[id],
-    armor = assets[id + '-armor'],
+    templateArmor = assets[id + '-armor'],
     template = new THREE.Group(),
     parts: NativePart[] = [];
   for (const slot of BODY_SLOTS) {
-    const source = equipment[slot] ? armor : base;
+    const equipped = equipment[slot];
+    const source = equipped
+      ? assets[ITEMS[equipped.id].armorModel || id + '-armor'] || templateArmor
+      : base;
     source.template.children.forEach((mesh, i) => {
       if (mesh.userData.slot === slot) {
         template.add(mesh.clone());
@@ -364,7 +368,12 @@ function equippedActor(id: HeroId, equipment: Equipment, height: number) {
   }
   if (equipment.shield) {
     const attachment = new THREE.Group();
-    attachment.add(assets[ITEMS[equipment.shield.id].model].template.clone());
+    const shield = assets[ITEMS[equipment.shield.id].model].template.clone();
+    // The shield's mesh origin is a weapon export origin, not the forearm strap.
+    // Center it once; the exported anatomical socket supplies placement and rotation.
+    const bounds = new THREE.Box3().setFromObject(shield);
+    shield.position.sub(bounds.getCenter(new THREE.Vector3()));
+    attachment.add(shield);
     attachment.traverse((child) => {
       if (child instanceof THREE.Mesh) child.userData.slot = 'shield';
     });
@@ -408,11 +417,7 @@ function animateCompanion(root: THREE.Group, t: number, dt = 1 / 60) {
   if (root.userData.companionWorldSpace && run) {
     followCompanion(pet, run, dt, t, height, heightAt);
   } else {
-    // Character selection is a local display scene; flight is independent of the player's pose.
-    pet.position.y = height * (0.65 + Math.sin(t * 3.2) * 0.05);
-    pet.position.z = Math.cos(t * 1.5) * height * 0.08;
-    pet.position.x = height * (0.55 + Math.sin(t * 1.2) * 0.07);
-    pet.rotation.y = Math.sin(t * 1.6) * 0.25;
+    followCompanion(pet, { x: 0, z: 0 }, dt, t, height, () => 0);
   }
   animateNativeLoop(pet, t, 1.8);
 }
@@ -594,32 +599,39 @@ async function world() {
     menuGroup.add(r);
   }
 }
-const worldSelection = createWorldSelection(async (stage) => {
-  if (run) throw new Error('Return to map selection before choosing a different map.');
-  stageLoading = true;
-  try {
-    const readJson = async <T>(url: string): Promise<T> => {
-      const response = await fetch(url);
-      if (!response.ok) throw new Error('Missing map asset');
-      return response.json() as Promise<T>;
-    };
-    const [terrain, objects] = await Promise.all([
-      readJson<TerrainData>(stage.terrain),
-      readJson<PropData>(stage.objects),
-    ]);
-    await Promise.all([
-      loadTexture(stage.texture),
-      ...objects.models.filter((name) => !assets[name]).map(loadModel),
-    ]);
-    terrainData = terrain;
-    objectData = objects;
-    await buildStage(stage);
-    currentStage = stage;
-    gameAudio.setWorld(stage.worldId);
-  } finally {
-    stageLoading = false;
-  }
-});
+const worldSelection = createWorldSelection(
+  async (stage) => {
+    if (run) throw new Error('Return to map selection before choosing a different map.');
+    stageLoading = true;
+    try {
+      const readJson = async <T>(url: string): Promise<T> => {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Missing map asset');
+        return response.json() as Promise<T>;
+      };
+      const [terrain, objects] = await Promise.all([
+        readJson<TerrainData>(stage.terrain),
+        readJson<PropData>(stage.objects),
+      ]);
+      await Promise.all([
+        loadTexture(stage.texture),
+        ...objects.models.filter((name) => !assets[name]).map(loadModel),
+      ]);
+      terrainData = terrain;
+      objectData = objects;
+      await buildStage(stage);
+      currentStage = stage;
+      gameAudio.setWorld(stage.worldId);
+    } finally {
+      stageLoading = false;
+    }
+  },
+  {
+    hero: () => selected,
+    equipment: () => readProfile().loadouts[selected],
+    icon: (id) => itemIcons[id],
+  },
+);
 const gameAudio = new GameAudio();
 function effect(id: string, position?: PointXZ) {
   const distance = position && run ? Math.hypot(position.x - run.x, position.z - run.z) : 0;
@@ -885,9 +897,10 @@ mountAccountFlow({
   stages(hero) {
     refreshStash();
     selected = hero;
-    characterPreview = false;
+    worldSelection.refresh();
+    characterPreview = true;
     freshPreview = false;
-    menuGroup.visible = false;
+    menuGroup.visible = true;
     if (ready) refreshPreviewGear();
   },
   play: start,
@@ -939,7 +952,7 @@ function modal() {
       saved = bankRun(s);
     refreshStash();
     $('modal').innerHTML =
-      `<span class="eyebrow">${won ? s.stage.worldName.toUpperCase() + ' STANDS' : 'EVERY LEGEND BEGINS SOMEWHERE'}</span><h2>${won ? 'You held the line.' : 'The horde prevails.'}</h2><p>${won ? 'Three minutes. Ten waves. One hero. The sanctuary lives another day.' : 'Return stronger. Your equipment makes the difference.'}</p><div class="results"><div><b>${time(s.time)}</b><span>SURVIVED</span></div><div><b>${s.kills}</b><span>ENEMIES SLAIN</span></div><div><b>${s.level}</b><span>HERO LEVEL</span></div></div><div class="run-loot"><span class="eyebrow">COLLECTED · ${s.loot.collected.length} / 12</span><ul class="loot-list">${inventoryRows(s.loot.collected)}</ul><p>${saved.saved ? 'Saved to your stash for future stages.' : 'Browser storage unavailable; items could not be saved.'}</p></div><div class="modal-actions"><button class="primary" id="retry">PLAY AGAIN ↗</button><button class="secondary" id="leave">MAP SELECTION</button><button class="secondary" id="end-inventory">INVENTORY</button></div>`;
+      `<span class="eyebrow">${won ? s.stage.worldName.toUpperCase() + ' STANDS' : 'EVERY LEGEND BEGINS SOMEWHERE'}</span><h2>${won ? 'You held the line.' : 'The horde prevails.'}</h2><p>${won ? 'Three minutes. Ten waves. One hero. The sanctuary lives another day.' : 'Return stronger. Your equipment makes the difference.'}</p><div class="results"><div><b>${time(s.time)}</b><span>SURVIVED</span></div><div><b>${s.kills}</b><span>ENEMIES SLAIN</span></div><div><b>${s.level}</b><span>HERO LEVEL</span></div></div><div class="run-loot"><span class="eyebrow">COLLECTED · ${s.loot.collected.length} / ${mapLootSettings(s.stage).limit}</span><ul class="loot-list">${inventoryRows(s.loot.collected)}</ul><p>${saved.saved ? 'Saved to your stash for future stages.' : 'Browser storage unavailable; items could not be saved.'}</p></div><div class="modal-actions"><button class="primary" id="retry">PLAY AGAIN ↗</button><button class="secondary" id="leave">MAP SELECTION</button><button class="secondary" id="end-inventory">INVENTORY</button></div>`;
     $('retry').onclick = start;
     $('leave').onclick = goMenu;
     $('end-inventory').onclick = openInventory;
@@ -1435,7 +1448,11 @@ async function init() {
         'weapon-sword',
         'weapon-staff',
         'weapon-bow',
-        ...Object.values(ITEMS).map((item) => item.model),
+        ...new Set(
+          Object.values(ITEMS).flatMap((item) =>
+            item.armorModel ? [item.model, item.armorModel] : [item.model],
+          ),
+        ),
         ...objectData.models,
       ].map(loadModel),
     );

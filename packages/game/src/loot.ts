@@ -1,3 +1,4 @@
+import { rollMapDrop, mapLootSettings } from './map-loot.js';
 import type {
   ItemDefinition,
   LootState,
@@ -8,7 +9,7 @@ import type {
   EquipmentSlot,
 } from '@mu-survivor/models';
 import { ARMOR_ITEMS, itemKey, validEnhancement } from './equipment.js';
-export const LOOT_LIMIT = 12;
+export const LOOT_LIMIT = 42;
 export const ITEMS: Readonly<Record<string, ItemDefinition>> = Object.freeze({
   'kundun-box': {
     id: 'kundun-box',
@@ -48,20 +49,6 @@ export const ITEMS: Readonly<Record<string, ItemDefinition>> = Object.freeze({
   },
   ...ARMOR_ITEMS,
 });
-const milestones = [4, 10, 18, 28, 40, 55, 72, 92, 115, 140, 170];
-const accessoryDrops = [
-  'ring-ice',
-  'ring-fire',
-  'pendant-lightning',
-  'shield-round',
-  'wings-angel',
-  'pet-angel',
-  'pet-satan',
-  'jewel-bless',
-  'jewel-soul',
-  'jewel-life',
-  'jewel-chaos',
-];
 export function equipmentDropId(hero: HeroId, slot: EquipmentSlot) {
   return (
     (
@@ -86,23 +73,20 @@ export function dropLoot(
   nextId: () => number,
   run?: GameState,
 ) {
-  if (state.dropped >= LOOT_LIMIT) return null;
-  if (!enemy.elite && (state.dropped >= milestones.length || kills < milestones[state.dropped]))
-    return null;
-  const index = state.dropped;
+  const limit = run ? mapLootSettings(run.stage).limit : LOOT_LIMIT;
+  if (state.dropped >= limit) return null;
+  if (!enemy.elite && (state.dropped >= limit - 1 || kills < 3 + state.dropped * 4)) return null;
+  const rolled =
+    !enemy.elite && run
+      ? rollMapDrop(run.stage, run.hero.id, state.dropped === 0, run.random)
+      : null;
   const id = enemy.elite
     ? 'kundun-box'
-    : run
-      ? index === 0
-        ? equipmentDropId(run.hero.id, run.dropSlots[0])
-        : index % 2 === 1
-          ? accessoryDrops[
-              Math.min(accessoryDrops.length - 1, Math.floor(run.random() * accessoryDrops.length))
-            ]
-          : equipmentDropId(run.hero.id, run.dropSlots[index % run.dropSlots.length])
-      : ['kundun-box', 'jewel-bless', 'jewel-soul', 'jewel-life'][index % 4];
+    : rolled?.id || ['jewel-bless', 'jewel-soul', 'jewel-life', 'jewel-chaos'][state.dropped % 4];
   const enhancement =
-    ITEMS[id].kind === 'equipment' ? rollEnhancement(run?.random || Math.random) : 0;
+    ITEMS[id].kind === 'equipment'
+      ? Math.floor((run?.random || Math.random)() * ((rolled?.maxEnhancement ?? 15) + 1))
+      : 0;
   const drop = { uid: nextId(), id, enhancement, x: enemy.x, z: enemy.z };
   state.dropped++;
   state.drops.push(drop);

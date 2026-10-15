@@ -1,3 +1,4 @@
+import { mapLootSettings } from '../packages/game/dist/map-loot.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
@@ -5,25 +6,27 @@ import {
   dropLoot,
   collectLoot,
   mergeInventory,
-  LOOT_LIMIT,
 } from '../packages/game/dist/loot.js';
 import { readInventory, bankRun } from '../packages/game/dist/inventory.js';
 import { createRun, spawnEnemy, tick } from '../packages/game/dist/index.js';
 test('stage loot is capped, includes accessories and a Guardian box, and requires proximity', () => {
   const state = createLootState();
-  const run = createRun('knight', () => 0);
+  let roll = 0;
+  const run = createRun('knight', () => (roll = (roll + 0.137) % 1));
+  const limit = mapLootSettings(run.stage).limit;
   let uid = 1;
-  for (let i = 0; i < 11; i++) assert.ok(dropLoot(state, { x: 4, z: 0 }, 1000, () => uid++, run));
-  assert.ok(state.drops.some((item) => item.id === 'ring-ice'));
+  for (let i = 0; i < limit - 1; i++)
+    assert.ok(dropLoot(state, { x: 4, z: 0 }, 1000, () => uid++, run));
+  assert.ok(state.drops.every((item) => item.enhancement <= 5));
   assert.ok(dropLoot(state, { x: 4, z: 0, elite: true }, 1001, () => uid++, run));
   assert.equal(
     dropLoot(state, { x: 4, z: 0, elite: true }, 1002, () => uid++, run),
     null,
   );
-  assert.equal(state.drops.length, LOOT_LIMIT);
+  assert.equal(state.drops.length, limit);
   assert.equal(state.drops.at(-1).id, 'kundun-box');
   assert.equal(collectLoot(state, 0, 0).length, 0);
-  assert.equal(collectLoot(state, 4, 0).length, LOOT_LIMIT);
+  assert.equal(collectLoot(state, 4, 0).length, limit);
   assert.equal(state.drops.length, 0);
 });
 

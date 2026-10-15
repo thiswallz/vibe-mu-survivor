@@ -10,7 +10,7 @@ const readModel = (name) =>
   JSON.parse(
     fs.readFileSync(new URL(`../apps/ui/public/assets/models/${name}.json`, import.meta.url)),
   );
-test('hand and spine attachments follow exported locomotion and attack sockets for every class', () => {
+test('hand, forearm and spine attachments follow locomotion and attack sockets for every class', () => {
   for (const hero of CLASSES) {
     const data = readModel(hero.id);
     const root = new THREE.Group();
@@ -45,6 +45,26 @@ test('hand and spine attachments follow exported locomotion and attack sockets f
       shield.distanceTo(root.userData.shield.position) > 0.01,
       hero.id + ' shield must follow movement',
     );
+  }
+});
+
+test('shield forearm sockets remain rigid without mirroring or scaling the shield', () => {
+  for (const hero of CLASSES) {
+    const data = readModel(hero.id);
+    for (const side of ['forearmLeft', 'forearmRight']) {
+      assert.equal(data.sockets[side].length, data.sockets.torso.length);
+      for (const frame of data.sockets[side]) {
+        assert.ok(frame.every(Number.isFinite));
+        const matrix = new THREE.Matrix4().fromArray(frame);
+        assert.ok(Math.abs(matrix.determinant() - 1) < 0.00001);
+        const axes = [0, 1, 2].map((column) =>
+          new THREE.Vector3().setFromMatrixColumn(matrix, column),
+        );
+        for (const axis of axes) assert.ok(Math.abs(axis.length() - 1) < 0.00001);
+        assert.ok(Math.abs(axes[0].dot(axes[1])) < 0.00001);
+        assert.ok(Math.abs(axes[0].dot(axes[2])) < 0.00001);
+      }
+    }
   }
 });
 test('wings and companions include changing native animation frames and loop with blended weights', () => {
@@ -164,4 +184,21 @@ test('vault rejects a full destination stack without consuming a character item'
   assert.throws(() => transferVaultItem(profile, vault, profile.items[0], 'deposit'), /full/);
   assert.equal(profile.items[0].quantity, 1);
   assert.equal(vault[0].quantity, 9999);
+});
+
+test('passive companions roam while a stationary character turns and remain within six meters', () => {
+  const pet = new THREE.Group();
+  pet.position.set(1, 1, 0);
+  const positions = [];
+  for (let frame = 0; frame < 1200; frame++) {
+    followCompanion(pet, { x: 0, z: 0 }, 1 / 60, frame / 60, 2.4, () => 0);
+    assert.ok(Math.hypot(pet.position.x, pet.position.z) <= 6.001);
+    if (frame % 60 === 0) positions.push(pet.position.clone());
+  }
+  assert.ok(positions.some((point) => point.distanceTo(positions[0]) > 1));
+  for (let frame = 0; frame < 600; frame++) {
+    const target = { x: (frame / 60) * 4, z: 0 };
+    followCompanion(pet, target, 1 / 60, 20 + frame / 60, 2.4, () => 0);
+    assert.ok(Math.hypot(pet.position.x - target.x, pet.position.z - target.z) <= 6.001);
+  }
 });

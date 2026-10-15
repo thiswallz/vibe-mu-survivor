@@ -27,6 +27,10 @@
     "./vault": {
       "types": "./dist/vault.d.ts",
       "default": "./dist/vault.js"
+    },
+    "./map-loot": {
+      "types": "./dist/map-loot.d.ts",
+      "default": "./dist/map-loot.js"
     }
   },
   "dependencies": {

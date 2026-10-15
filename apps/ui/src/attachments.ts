@@ -17,7 +17,7 @@ export function poseAttachments(
 ) {
   const bindings: [THREE.Group | undefined, string][] = [
     [root.userData.weapon, root.userData.socket],
-    [root.userData.shield, root.userData.socket === 'left' ? 'right' : 'left'],
+    [root.userData.shield, root.userData.socket === 'left' ? 'forearmRight' : 'forearmLeft'],
     [root.userData.wingAttachment, 'torso'],
   ];
   for (const [attachment, socketName] of bindings) {

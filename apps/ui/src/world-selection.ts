@@ -1,6 +1,10 @@
+import { renderMapLoot, type MapLootView } from './map-loot-panel.js';
 import type { StageDefinition } from '@mu-survivor/models';
 import { STAGES, DEFAULT_STAGE } from '@mu-survivor/game/stage';
-export function createWorldSelection(load: (stage: StageDefinition) => Promise<void>) {
+export function createWorldSelection(
+  load: (stage: StageDefinition) => Promise<void>,
+  loot: MapLootView,
+) {
   const world = document.getElementById('world-select') as HTMLSelectElement;
   const map = document.getElementById('map-select') as HTMLSelectElement;
   const play = document.getElementById('begin') as HTMLButtonElement;
@@ -29,6 +33,7 @@ export function createWorldSelection(load: (stage: StageDefinition) => Promise<v
       `MAP ${current.mapNumber} · ${current.name}`;
     document.getElementById('stage-description')!.textContent = current.description;
     document.getElementById('stage-difficulty')!.textContent = current.difficulty;
+    renderMapLoot(document.getElementById('map-loot')!, current, loot);
     play.textContent = `PLAY ${current.worldName.toUpperCase()} · MAP ${current.mapNumber} ↗`;
   }
   async function select() {
@@ -63,6 +68,7 @@ export function createWorldSelection(load: (stage: StageDefinition) => Promise<v
   };
   map.onchange = () => void select();
   return {
+    refresh: summary,
     enable() {
       ready = true;
       controls();

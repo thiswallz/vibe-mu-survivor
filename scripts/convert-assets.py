@@ -85,6 +85,26 @@ def texture(folder,name):
   im.save(dest)
  return 'assets/textures/'+dest.name
 
+def forearm_socket(mats, side, bind):
+ # Shield local X is its face normal, Y runs up the forearm. Anchor between
+ # elbow and wrist instead of borrowing a weapon grip with a different origin.
+ axis=np.array([[1,0,0],[0,0,1],[0,-1,0]])
+ elbow,wrist=(36,37) if side=='left' else (27,28)
+ start=axis@mats[elbow][:3,3]/100;end=axis@mats[wrist][:3,3]/100
+ center=(start+end)*.5
+ along=start-end;along/=np.linalg.norm(along)
+ torso=axis@mats[18][:3,3]/100
+ outward=center-torso;outward-=along*np.dot(outward,along)
+ outward/=max(np.linalg.norm(outward),.000001)
+ forward=axis@mats[18][:3,:3]@bind[18][:3,:3].T@axis.T@np.array([0,0,1])
+ normal=forward*.75+outward*.35;normal-=along*np.dot(normal,along)
+ normal/=max(np.linalg.norm(normal),.000001)
+ across=np.cross(normal,along);across/=max(np.linalg.norm(across),.000001)
+ along=np.cross(across,normal)
+ out=np.eye(4);out[:3,0]=normal;out[:3,1]=along;out[:3,2]=across
+ out[:3,3]=center+normal*.18
+ return out
+
 def convert(key,paths,animate=False,playerRig=None,animationSamples=4):
  parts=[];bounds=[]; clips={}; matsForClips=[]
  if playerRig:
@@ -130,10 +150,12 @@ def convert(key,paths,animate=False,playerRig=None,animationSamples=4):
  if clips:
   result['clips']=clips;result['sockets']={}
   axis=np.array([[1,0,0],[0,0,1],[0,-1,0]])
-  for label,node in [('right',33),('left',42),('torso',18)]:
+  for label,node in [('right',33),('left',42),('torso',18),('forearmLeft',36),('forearmRight',27)]:
    result['sockets'][label]=[]
    for mats in matsForClips:
-    m=mats[node];out=np.eye(4);rotation=m[:3,:3]@(matsForClips[0][node][:3,:3].T if label=='torso' else np.eye(3));out[:3,:3]=axis@rotation@axis.T;out[:3,3]=axis@m[:3,3]/100
+    if label.startswith('forearm'):out=forearm_socket(mats,'left' if label=='forearmLeft' else 'right',matsForClips[0])
+    else:
+     m=mats[node];out=np.eye(4);rotation=m[:3,:3]@(matsForClips[0][node][:3,:3].T if label=='torso' else np.eye(3));out[:3,:3]=axis@rotation@axis.T;out[:3,3]=axis@m[:3,3]/100
     result['sockets'][label].append([round(float(v),6) for v in out.T.flatten()])
  dest=OUT/'models'/f'{key}.json';dest.write_text(json.dumps(result,separators=(',',':')))
  manifest[key]={'source':[str(p.relative_to(SOURCE)) for p in paths],'file':'assets/models/'+dest.name,'triangles':sum(len(p['positions'])//9 for p in parts),'height':float(maximum[1]-minimum[1])}

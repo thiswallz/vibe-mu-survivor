@@ -37,6 +37,9 @@ export interface ItemDefinition {
   hero?: HeroId;
   slot?: EquipmentSlot;
   slots?: EquipmentSlot[];
+  tier?: number;
+  armorModel?: string;
+  setName?: string;
   bonuses?: { defense?: number; vitality?: number; attackPower?: number; aura?: number };
   description?: string;
 }

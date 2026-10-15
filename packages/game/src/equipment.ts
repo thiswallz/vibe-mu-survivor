@@ -1,3 +1,4 @@
+import { EXPANDED_EQUIPMENT } from './expanded-equipment.js';
 import type {
   EquipmentSlot,
   HeroId,
@@ -53,6 +54,7 @@ const CLASS_ITEMS: Readonly<Record<string, ItemDefinition>> = Object.freeze(
           {
             id,
             name: slot === 'weapon' ? WEAPON_NAMES[hero as HeroId] : `${set} ${SLOT_LABELS[slot]}`,
+            tier: 3,
             hero: hero as HeroId,
             slot,
             kind: 'equipment' as const,
@@ -132,6 +134,7 @@ export const ACCESSORY_ITEMS: Readonly<Record<string, ItemDefinition>> = Object.
 // Kept as a compatibility export for existing equipment consumers.
 export const ARMOR_ITEMS: Readonly<Record<string, ItemDefinition>> = Object.freeze({
   ...CLASS_ITEMS,
+  ...EXPANDED_EQUIPMENT,
   ...ACCESSORY_ITEMS,
 });
 export function fitsSlot(def: ItemDefinition, slot: EquipmentSlot) {
@@ -177,6 +180,7 @@ export function itemColor(item: Pick<InventoryItem, 'id' | 'enhancement'>) {
 export function itemStats(item: Pick<InventoryItem, 'id' | 'enhancement'>) {
   const def = ARMOR_ITEMS[item.id],
     level = item.enhancement || 0;
+  const tierScale = def?.tier === 1 ? 0.55 : def?.tier === 2 ? 0.8 : 1;
   const base: Partial<Record<EquipmentSlot, number>> = {
     helm: 20,
     armor: 35,
@@ -196,17 +200,18 @@ export function itemStats(item: Pick<InventoryItem, 'id' | 'enhancement'>) {
   return {
     defense:
       def?.slot && def.slot !== 'weapon'
-        ? (base[def.slot] || def.bonuses?.defense || 0) +
+        ? Math.round((base[def.slot] || def.bonuses?.defense || 0) * tierScale) +
           level * 2 +
           Math.floor(level * level * 0.3)
         : 0,
     vitality:
       def?.slot && def.slot !== 'weapon'
-        ? (health[def.slot] || def.bonuses?.vitality || 0) + Math.floor(level / 3)
+        ? Math.round((health[def.slot] || def.bonuses?.vitality || 0) * tierScale) +
+          Math.floor(level / 3)
         : 0,
     attackPower:
       def?.slot === 'weapon'
-        ? 30 + level * 3
+        ? Math.round(30 * tierScale) + level * 3
         : (def?.bonuses?.attackPower || 0) + (def?.bonuses?.attackPower ? level : 0),
     aura: def?.bonuses?.aura || 0,
     requiredHero: def?.hero,

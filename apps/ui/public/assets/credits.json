@@ -96,5 +96,10 @@
       "Music/Noria.mp3",
       "Music/Devias.mp3"
     ]
+  },
+  "expandedEquipment": {
+    "sourceClient": "Nexus MU Online/Data",
+    "catalog": "assets/expanded-equipment-catalog.json",
+    "conversion": "scripts/convert-expanded-equipment.py"
   }
 }
