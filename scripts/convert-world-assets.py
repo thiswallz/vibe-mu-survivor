@@ -1,5 +1,6 @@
 """Build authored survivor arenas with offline-converted MU world textures and props."""
 import importlib.util, json, math, random, shutil
+import numpy as np
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFilter
 root=Path(__file__).resolve().parent
@@ -15,6 +16,20 @@ for world,number in worlds:
     for i in [1,2,3,4,5,6]:
         key=f'{world}-{i-1}'
         c.convert(key,[c.SOURCE/f'Object{number}'/f'Object{i:02}.bmd'])
+        # MU uses exact black as a texture cutout on older JPG props. Do not use
+        # luminance as alpha: that also erases dark trunks, stone and wood.
+        model_path=out/'models'/f'{key}.json'
+        model=json.loads(model_path.read_text(encoding='utf-8'))
+        for part in model['parts']:
+            if not part.get('texture'):continue
+            texture_path=out.parent/part['texture']
+            image=Image.open(texture_path).convert('RGBA')
+            pixels=np.array(image)
+            pixels[:,:,3]=np.where(np.max(pixels[:,:,:3],axis=2)<10,0,pixels[:,:,3])
+            destination=texture_path.with_stem(texture_path.stem+'-world-cutout')
+            Image.fromarray(pixels).save(destination)
+            part['texture']='assets/textures/'+destination.name
+        model_path.write_text(json.dumps(model,separators=(',',':')),encoding='utf-8')
         models.append(key)
     folder=c.SOURCE/f'World{number}'
     tiles=[]

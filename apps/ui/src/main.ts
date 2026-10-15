@@ -160,11 +160,7 @@ async function loadModel(name: string) {
       alphaTest: 0.45,
     });
     const terrainObject = Number(name.split('-')[1]);
-    if (
-      ['lorencia-', 'noria-', 'devias-'].some((prefix) => name.startsWith(prefix)) &&
-      terrainObject <= 27 &&
-      map
-    ) {
+    if (name.startsWith('lorencia-') && terrainObject <= 27 && map) {
       mat.alphaMap = map;
       mat.alphaTest = 0.12;
     }
