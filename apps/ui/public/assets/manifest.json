@@ -1054,5 +1054,157 @@
     "file": "assets/models/loot-elf-weapon.json",
     "triangles": 106,
     "height": 0.92708
+  },
+  "loot-ring-ice": {
+    "source": [
+      "Item\\Ring01.bmd"
+    ],
+    "file": "assets/models/loot-ring-ice.json",
+    "triangles": 52,
+    "height": 0.22227
+  },
+  "loot-ring-fire": {
+    "source": [
+      "Item\\Ring02.bmd"
+    ],
+    "file": "assets/models/loot-ring-fire.json",
+    "triangles": 50,
+    "height": 0.21243
+  },
+  "loot-pendant-lightning": {
+    "source": [
+      "Item\\Necklace01.bmd"
+    ],
+    "file": "assets/models/loot-pendant-lightning.json",
+    "triangles": 78,
+    "height": 0.11559
+  },
+  "loot-shield-round": {
+    "source": [
+      "Item\\Shield01.bmd"
+    ],
+    "file": "assets/models/loot-shield-round.json",
+    "triangles": 18,
+    "height": 0.53978
+  },
+  "loot-wings-angel": {
+    "source": [
+      "Item\\Wing02.bmd"
+    ],
+    "file": "assets/models/loot-wings-angel.json",
+    "triangles": 46,
+    "height": 1.8218999999999999
+  },
+  "loot-pet-angel": {
+    "source": [
+      "Player\\Helper01.bmd"
+    ],
+    "file": "assets/models/loot-pet-angel.json",
+    "triangles": 50,
+    "height": 0.5374099999999999
+  },
+  "loot-pet-satan": {
+    "source": [
+      "Player\\Helper02.bmd"
+    ],
+    "file": "assets/models/loot-pet-satan.json",
+    "triangles": 58,
+    "height": 0.52373
+  },
+  "noria-0": {
+    "source": [
+      "Object4\\Object01.bmd"
+    ],
+    "file": "assets/models/noria-0.json",
+    "triangles": 134,
+    "height": 1.9918200000000001
+  },
+  "noria-1": {
+    "source": [
+      "Object4\\Object02.bmd"
+    ],
+    "file": "assets/models/noria-1.json",
+    "triangles": 69,
+    "height": 1.4793500000000002
+  },
+  "noria-2": {
+    "source": [
+      "Object4\\Object03.bmd"
+    ],
+    "file": "assets/models/noria-2.json",
+    "triangles": 264,
+    "height": 1.27508
+  },
+  "noria-3": {
+    "source": [
+      "Object4\\Object04.bmd"
+    ],
+    "file": "assets/models/noria-3.json",
+    "triangles": 144,
+    "height": 0.9758600000000001
+  },
+  "noria-4": {
+    "source": [
+      "Object4\\Object05.bmd"
+    ],
+    "file": "assets/models/noria-4.json",
+    "triangles": 192,
+    "height": 0.42573
+  },
+  "noria-5": {
+    "source": [
+      "Object4\\Object06.bmd"
+    ],
+    "file": "assets/models/noria-5.json",
+    "triangles": 144,
+    "height": 0.6853899999999999
+  },
+  "devias-0": {
+    "source": [
+      "Object3\\Object01.bmd"
+    ],
+    "file": "assets/models/devias-0.json",
+    "triangles": 140,
+    "height": 5.70153
+  },
+  "devias-1": {
+    "source": [
+      "Object3\\Object02.bmd"
+    ],
+    "file": "assets/models/devias-1.json",
+    "triangles": 44,
+    "height": 1.52
+  },
+  "devias-2": {
+    "source": [
+      "Object3\\Object03.bmd"
+    ],
+    "file": "assets/models/devias-2.json",
+    "triangles": 356,
+    "height": 1.9350399999999999
+  },
+  "devias-3": {
+    "source": [
+      "Object3\\Object04.bmd"
+    ],
+    "file": "assets/models/devias-3.json",
+    "triangles": 60,
+    "height": 1.02977
+  },
+  "devias-4": {
+    "source": [
+      "Object3\\Object05.bmd"
+    ],
+    "file": "assets/models/devias-4.json",
+    "triangles": 170,
+    "height": 8.85202
+  },
+  "devias-5": {
+    "source": [
+      "Object3\\Object06.bmd"
+    ],
+    "file": "assets/models/devias-5.json",
+    "triangles": 26,
+    "height": 0.62072
   }
 }

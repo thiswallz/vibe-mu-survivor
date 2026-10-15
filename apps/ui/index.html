@@ -8,7 +8,7 @@
       rel="icon"
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23101719'/%3E%3Ctext x='5' y='45' font-family='Georgia' font-weight='bold' font-size='30' fill='%23d5b98a'%3EMU%3C/text%3E%3C/svg%3E"
     />
-    <title>MU Survivor · Lorencia</title>
+    <title>MU Survivor</title>
   </head>
   <body>
     <div id="world"></div>
@@ -17,7 +17,8 @@
     <header id="header">
       <a class="wordmark" href="/" aria-label="MU Survivor home">MU<span>SURVIVOR</span></a>
       <div class="header-right">
-        <span class="build-label"><i></i> LOCAL PROTOTYPE · 01</span
+        <span class="build-label"><i></i> LOCAL REALM · 01</span
+        ><button class="icon-btn" id="vault">VAULT</button
         ><button class="icon-btn" id="stash">INVENTORY</button
         ><button id="sound" class="icon-btn" aria-label="Mute audio" title="Mute audio">
           ♪ SOUND ON</button
@@ -27,37 +28,44 @@
     <main id="menu">
       <div class="intro">
         <div class="eyebrow"><span></span> A NEW WAY TO RETURN TO MU</div>
-        <h1>One hero.<br />An endless horde.</h1>
+        <h1><span id="selected-character">Your hero</span></h1>
         <p>
-          The world you remember. A fight you haven’t played.<br />Choose your hero and survive the
-          fall of Lorencia.
+          The world you remember. A fight you haven’t played.<br />Choose your World and Map. Stop
+          to attack; move to evade.
         </p>
       </div>
       <aside class="stage">
-        <span class="eyebrow">THE FIRST STAND</span>
-        <h2>01 <span>Lorencia</span></h2>
+        <span class="eyebrow" id="world-name">WORLD 1 · LORENCIA</span>
+        <h2 id="stage-name">MAP 1 · The First Stand</h2>
         <div class="stage-line"></div>
-        <p>Outside the sanctuary, darkness gathers.</p>
+        <p id="stage-description">Outside the sanctuary, darkness gathers.</p>
+        <p>Difficulty: <b id="stage-difficulty">Normal</b></p>
         <div class="stage-stats">
           <span><b>3</b> MINUTES</span><span><b>10</b> WAVES</span><span><b>1</b> FINAL BOSS</span>
         </div>
       </aside>
       <section class="selection">
-        <div class="selection-label">
-          <span class="eyebrow">CHOOSE YOUR HERO</span><span>01 — 03</span>
+        <div class="selection-label" hidden>
+          <span class="eyebrow">YOUR CHARACTER CLASS</span><span>01 — 03</span>
         </div>
-        <div id="cards" class="cards"></div>
+        <div id="cards" class="cards" hidden></div>
+        <div class="map-choice">
+          <label>World<select id="world-select" aria-label="World"></select></label
+          ><label>Map<select id="map-select" aria-label="Map"></select></label
+          ><button id="change-character" class="secondary">CHARACTERS</button>
+        </div>
+        <p id="stage-status" role="status"></p>
+        <p id="save-status" role="status"></p>
         <div class="begin-row">
           <p>
-            <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move <span>·</span> Attacks are
-            automatic <span>·</span> <kbd>SPACE</kbd> dash
+            <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move <span>·</span> Stop to attack
+            <span>·</span> <kbd>SPACE</kbd> dash
           </p>
           <button id="begin" class="primary" disabled>PREPARING LORENCIA… <span>↗</span></button>
         </div>
       </section>
       <footer>
-        <span>NO ACCOUNT. JUST SURVIVE.</span
-        ><span>WEBGL · SINGLE PLAYER · ORIGINAL MU ASSETS</span>
+        <span>YOUR NEXT STAND AWAITS.</span><span>WEBGL · SINGLE PLAYER · ORIGINAL MU ASSETS</span>
       </footer>
     </main>
     <div id="hud" hidden>
@@ -67,7 +75,7 @@
         <div id="gear-status">Starter armor</div>
       </div>
       <div class="run-clock">
-        <span class="eyebrow">LORENCIA · SURVIVE</span><b id="timer">00:00</b
+        <span class="eyebrow" id="run-world">LORENCIA · SURVIVE</span><b id="timer">00:00</b
         ><span id="objective">Survive 03:00 · defeat the guardian</span>
       </div>
       <div class="wave-panel">
@@ -76,7 +84,7 @@
         <small id="horde-count"></small>
       </div>
       <div id="boss-health" hidden>
-        <span>LORENCIA GUARDIAN</span>
+        <span id="boss-name">LORENCIA GUARDIAN</span>
         <div><i id="boss-fill"></i></div>
       </div>
       <div class="bottom-hud">
@@ -108,8 +116,8 @@
         </div>
       </div>
       <div class="battle-help">
-        <kbd>WASD</kbd> move <span>·</span> <kbd>1 / 2</kbd> switch skill <span>·</span>
-        <kbd>ESC</kbd> pause
+        <kbd>WASD</kbd> move · Stop to attack <span>·</span> <kbd>1 / 2</kbd> switch skill
+        <span>·</span> <kbd>ESC</kbd> pause
       </div>
       <div id="toast" aria-live="polite"></div>
       <div id="joystick"><i></i></div>

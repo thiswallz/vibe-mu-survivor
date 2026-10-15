@@ -43,6 +43,14 @@ export class GameAudio {
     this.music.muted = value;
     for (const pool of Object.values(this.pools)) for (const voice of pool) voice.muted = value;
   }
+  setWorld(worldId: string) {
+    const source =
+      worldId === 'lorencia' ? 'assets/audio/lorencia-pub.mp3' : `assets/audio/${worldId}.mp3`;
+    if (this.music.getAttribute('src') === source) return;
+    this.music.pause();
+    this.music.src = source;
+    this.startMusic();
+  }
   startMusic() {
     if (!this.muted) this.music.play().catch(() => {});
   }

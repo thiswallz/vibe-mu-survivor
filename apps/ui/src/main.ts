@@ -1,3 +1,13 @@
+import { followCompanion } from './companion.js';
+import { createWorldSelection } from './world-selection.js';
+import { DEFAULT_STAGE } from '@mu-survivor/game/stage';
+import type { StageDefinition } from '@mu-survivor/models';
+import { poseAttachments, animateNativeLoop, independentAnimation } from './attachments.js';
+import { createVaultPanel } from './vault-panel.js';
+import { isGuest, readVault, transferItem } from './account-session.js';
+import { activeCharacter } from './account-session.js';
+import { mountAccountFlow } from './account-flow.js';
+import './styles/accounts.css';
 import { createCharacterPanel } from './character-panel.js';
 import { createItemPreview } from './item-preview.js';
 import './styles/style.css';
@@ -10,6 +20,7 @@ import type {
   GameState,
   EquipmentActor,
   Equipment,
+  EquipmentSlot,
   InventoryItem,
   EquippedItem,
   Obstacle,
@@ -21,6 +32,8 @@ import type {
 } from '@mu-survivor/models';
 import { createInventoryPanel } from './inventory-panel.js';
 import {
+  BODY_SLOTS,
+  emptyEquipment,
   hasEnhancedArmorSet,
   itemName,
   itemColor,
@@ -52,10 +65,8 @@ import {
   SKILLS,
   WAVE_SECONDS,
   SURGE_SECONDS,
-  upgradeDefinition,
   createRun,
   tick,
-  chooseUpgrade,
   setSkill,
   positionClear,
   DURATION,
@@ -68,6 +79,10 @@ function $<T extends HTMLElement = HTMLElement>(id: string): T {
 }
 const api = createMuApiClient();
 const icons = { knight: '⚔', wizard: '✦', elf: '➶' };
+let currentStage = DEFAULT_STAGE;
+let stageLoading = false;
+let characterPreview = false;
+let freshPreview = false;
 let selected: HeroId = 'knight',
   run: GameState | null = null,
   ready = false,
@@ -145,7 +160,11 @@ async function loadModel(name: string) {
       alphaTest: 0.45,
     });
     const terrainObject = Number(name.split('-')[1]);
-    if (name.startsWith('lorencia-') && terrainObject <= 27 && map) {
+    if (
+      ['lorencia-', 'noria-', 'devias-'].some((prefix) => name.startsWith(prefix)) &&
+      terrainObject <= 27 &&
+      map
+    ) {
       mat.alphaMap = map;
       mat.alphaTest = 0.12;
     }
@@ -258,13 +277,6 @@ function weapon(root: THREE.Group, id: HeroId, item?: EquippedItem | null) {
   root.userData.weapon = attachment;
   root.userData.socket = id === 'elf' ? 'left' : 'right';
 }
-const poseMatrix = new THREE.Matrix4(),
-  poseMatrix2 = new THREE.Matrix4(),
-  posePos = new THREE.Vector3(),
-  posePos2 = new THREE.Vector3(),
-  poseQ = new THREE.Quaternion(),
-  poseQ2 = new THREE.Quaternion(),
-  poseScale = new THREE.Vector3();
 function setPose(root: THREE.Group, clipName: string, seconds: number, loop = true, dt = 1 / 60) {
   const data = assets[root.userData.model].data;
   const clip = data.clips?.[clipName];
@@ -283,18 +295,10 @@ function setPose(root: THREE.Group, clipName: string, seconds: number, loop = tr
     weights[i] += (desired - weights[i]) * smoothing;
   }
   root.userData.body.traverse((child: THREE.Mesh) => {
-    if (child.morphTargetInfluences)
+    if (child.morphTargetInfluences && !child.userData.independentAnimation)
       for (let i = 0; i < weights.length; i++) child.morphTargetInfluences[i] = weights[i];
   });
-  const socket = data.sockets?.[root.userData.socket];
-  if (socket && root.userData.weapon) {
-    poseMatrix.fromArray(socket[a]).decompose(posePos, poseQ, poseScale);
-    poseMatrix2.fromArray(socket[b]).decompose(posePos2, poseQ2, poseScale);
-    posePos.lerp(posePos2, blend);
-    poseQ.slerp(poseQ2, blend);
-    root.userData.weapon.position.lerp(posePos, 1 - Math.exp(-dt * 22));
-    root.userData.weapon.quaternion.slerp(poseQ, 1 - Math.exp(-dt * 22));
-  }
+  poseAttachments(root, data, a, b, blend, 1 - Math.exp(-dt * 22));
 }
 function attackPose(
   root: THREE.Group,
@@ -315,6 +319,7 @@ function attackPose(
     strength = Math.sin(Math.PI * p) ** 0.35;
   root.userData.body.traverse((mesh: THREE.Mesh) => {
     if (
+      mesh.userData.independentAnimation ||
       !mesh.morphTargetInfluences ||
       (moving && !mesh.userData.upperBody && root.userData.model.startsWith('knight') === false)
     )
@@ -325,13 +330,7 @@ function attackPose(
         mesh.morphTargetInfluences[i] * (1 - strength) + attack * strength;
     }
   });
-  const sockets = data.sockets![root.userData.socket];
-  poseMatrix.fromArray(sockets[a]).decompose(posePos, poseQ, poseScale);
-  poseMatrix2.fromArray(sockets[b]).decompose(posePos2, poseQ2, poseScale);
-  posePos.lerp(posePos2, blend);
-  poseQ.slerp(poseQ2, blend);
-  root.userData.weapon.position.lerp(posePos, strength * (1 - Math.exp(-dt * 32)));
-  root.userData.weapon.quaternion.slerp(poseQ, strength * (1 - Math.exp(-dt * 32)));
+  poseAttachments(root, data, a, b, blend, strength * (1 - Math.exp(-dt * 32)));
 }
 let appearanceKey = '';
 function equippedActor(id: HeroId, equipment: Equipment, height: number) {
@@ -339,7 +338,7 @@ function equippedActor(id: HeroId, equipment: Equipment, height: number) {
     armor = assets[id + '-armor'],
     template = new THREE.Group(),
     parts: NativePart[] = [];
-  for (const slot of SLOTS.filter((s) => s !== 'weapon')) {
+  for (const slot of BODY_SLOTS) {
     const source = equipment[slot] ? armor : base;
     source.template.children.forEach((mesh, i) => {
       if (mesh.userData.slot === slot) {
@@ -352,6 +351,37 @@ function equippedActor(id: HeroId, equipment: Equipment, height: number) {
   assets[key] = { template, data: { ...base.data, parts } };
   const root = model(key, height);
   weapon(root, id, equipment.weapon);
+  const nativeHeight = base.data.max[1] - base.data.min[1];
+  if (equipment.wings) {
+    const attachment = new THREE.Group();
+    const wingAsset = assets[ITEMS[equipment.wings.id].model];
+    const wings = wingAsset.template.clone();
+    // Keep the original joint origin; normalizing a wing mesh moves its root away from the spine.
+    const span = wingAsset.data.max[0] - wingAsset.data.min[0];
+    wings.scale.setScalar((nativeHeight * 1.8) / span);
+    wings.position.set(0, 0, -nativeHeight * 0.075);
+    independentAnimation(wings);
+    attachment.add(wings);
+    root.userData.body.add(attachment);
+    root.userData.wingAttachment = attachment;
+    root.userData.wings = wings;
+  }
+  if (equipment.shield) {
+    const attachment = new THREE.Group();
+    attachment.add(assets[ITEMS[equipment.shield.id].model].template.clone());
+    attachment.traverse((child) => {
+      if (child instanceof THREE.Mesh) child.userData.slot = 'shield';
+    });
+    root.userData.body.add(attachment);
+    root.userData.shield = attachment;
+  }
+  if (equipment.pet) {
+    const pet = model(ITEMS[equipment.pet.id].model, height * 0.23, true);
+    pet.position.set(height * 0.4, height * 0.55, 0);
+    root.add(pet);
+    root.userData.companion = pet;
+    root.userData.companionHeight = height;
+  }
   prepareActor(root);
   root.userData.equipment = equipment;
   enhanceArmor(
@@ -373,6 +403,33 @@ function equippedActor(id: HeroId, equipment: Equipment, height: number) {
   }
   return root;
 }
+function animateCompanion(root: THREE.Group, t: number, dt = 1 / 60) {
+  const pet = root.userData.companion as THREE.Group | undefined;
+  const wings = root.userData.wings as THREE.Group | undefined;
+  if (wings) animateNativeLoop(wings, t, 1.1);
+  if (!pet) return;
+  const height = root.userData.companionHeight as number;
+  if (root.userData.companionWorldSpace && run) {
+    followCompanion(pet, run, dt, t, height, heightAt);
+  } else {
+    // Character selection is a local display scene; flight is independent of the player's pose.
+    pet.position.y = height * (0.65 + Math.sin(t * 3.2) * 0.05);
+    pet.position.z = Math.cos(t * 1.5) * height * 0.08;
+    pet.position.x = height * (0.55 + Math.sin(t * 1.2) * 0.07);
+    pet.rotation.y = Math.sin(t * 1.6) * 0.25;
+  }
+  animateNativeLoop(pet, t, 1.8);
+}
+function disposeHeroModel() {
+  if (!heroModel || heroModel.userData.characterDisposed) return;
+  heroModel.userData.characterDisposed = true;
+  const pet = heroModel.userData.companion as THREE.Group | undefined;
+  if (pet && heroModel.userData.companionWorldSpace) {
+    pet.removeFromParent();
+    disposeActor(pet);
+  }
+  disposeActor(heroModel);
+}
 function refreshAppearance() {
   if (!run) return;
   const key = run.hero.id + JSON.stringify(run.equipment);
@@ -380,14 +437,22 @@ function refreshAppearance() {
   appearanceKey = key;
   if (heroModel) {
     playGroup.remove(heroModel);
-    disposeActor(heroModel);
+    disposeHeroModel();
   }
   heroModel = equippedActor(run.hero.id, run.equipment, 2.4);
   addShadow(heroModel, 1);
   playGroup.add(heroModel);
+  const pet = heroModel.userData.companion as THREE.Group | undefined;
+  if (pet) {
+    playGroup.add(pet);
+    pet.position.set(run.x + 1.4, heightAt(run.x, run.z) + 1.7, run.z - 0.6);
+    heroModel.userData.companionWorldSpace = true;
+  }
 }
 function refreshPreviewGear() {
-  const profile = readProfile();
+  const profile = freshPreview
+    ? { loadouts: { knight: emptyEquipment(), wizard: emptyEquipment(), elf: emptyEquipment() } }
+    : readProfile();
   for (let i = 0; i < CLASSES.length; i++) {
     const hero = CLASSES[i],
       old = heroPreviews[hero.id];
@@ -455,8 +520,19 @@ function heightAt(x: number, z: number) {
     b = h[(iy + 1) * (size + 1) + ix] * (1 - fx) + h[(iy + 1) * (size + 1) + ix + 1] * fx;
   return a * (1 - fy) + b * fy;
 }
-async function world() {
-  const terrain = await loadTexture('assets/textures/lorencia-terrain.jpg');
+let groundMesh: THREE.Mesh | undefined;
+async function buildStage(stage: StageDefinition) {
+  const terrain = await loadTexture(stage.texture);
+  if (groundMesh) {
+    groundMesh.geometry.dispose();
+    (groundMesh.material as THREE.Material).dispose();
+  }
+  floorGroup.clear();
+  scenery.length = 0;
+  obstacles.length = 0;
+  scene.background = new THREE.Color(stage.fog);
+  scene.fog = new THREE.FogExp2(stage.fog, stage.worldId === 'devias' ? 0.013 : 0.019);
+  sun.color.set(stage.sun);
   terrain.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
   const size = terrainData.size,
     spacing = terrainData.spacing;
@@ -471,14 +547,16 @@ async function world() {
   terrain.offset.y = 1;
   const ground = new THREE.Mesh(
     geometry,
-    new THREE.MeshStandardMaterial({ map: terrain, color: '#b9c5b0', roughness: 1 }),
+    new THREE.MeshStandardMaterial({ map: terrain, color: stage.ground, roughness: 1 }),
   );
+  groundMesh = ground;
   floorGroup.add(ground);
   // Every prop comes from Terrain.obj, with its original type, position, rotation and scale.
   let lightCount = 0;
   for (const source of objectData.objects) {
     const p = assets[source.model].template.clone();
     p.position.fromArray(source.position);
+    if (stage.id !== DEFAULT_STAGE.id) p.position.y = heightAt(p.position.x, p.position.z);
     p.rotation.set(...source.rotation);
     p.scale.setScalar(source.scale);
     p.updateMatrixWorld(true);
@@ -502,6 +580,9 @@ async function world() {
   const boundary = ring(ARENA + 1, '#b8be8d');
   boundary.position.y = 0.04;
   floorGroup.add(boundary);
+}
+async function world() {
+  await buildStage(currentStage);
   for (let i = 0; i < 3; i++) {
     const hero = CLASSES[i],
       p = model(hero.id, 4.2);
@@ -513,9 +594,36 @@ async function world() {
     const r = ring(1.65, hero.color);
     r.position.copy(p.position);
     r.position.y += 0.05;
+    r.userData.previewHero = hero.id;
     menuGroup.add(r);
   }
 }
+const worldSelection = createWorldSelection(async (stage) => {
+  if (run) throw new Error('Return to map selection before choosing a different map.');
+  stageLoading = true;
+  try {
+    const readJson = async <T>(url: string): Promise<T> => {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('Missing map asset');
+      return response.json() as Promise<T>;
+    };
+    const [terrain, objects] = await Promise.all([
+      readJson<TerrainData>(stage.terrain),
+      readJson<PropData>(stage.objects),
+    ]);
+    await Promise.all([
+      loadTexture(stage.texture),
+      ...objects.models.filter((name) => !assets[name]).map(loadModel),
+    ]);
+    terrainData = terrain;
+    objectData = objects;
+    await buildStage(stage);
+    currentStage = stage;
+    gameAudio.setWorld(stage.worldId);
+  } finally {
+    stageLoading = false;
+  }
+});
 const gameAudio = new GameAudio();
 function effect(id: string, position?: PointXZ) {
   const distance = position && run ? Math.hypot(position.x - run.x, position.z - run.z) : 0;
@@ -569,8 +677,8 @@ const inventoryPanel = createInventoryPanel({
   stopPreview: () => itemPreview?.hide(),
   context: inventoryContext,
   icon: (id) => itemIcons[id],
-  equip: (item) => {
-    if (equipItem(inventoryContext(), item)) persistEquipment();
+  equip: (item, slot) => {
+    if (equipItem(inventoryContext(), item, slot)) persistEquipment();
   },
   unequip: (slot) => {
     unequipSlot(inventoryContext(), slot);
@@ -589,9 +697,11 @@ const inventoryPanel = createInventoryPanel({
     return result.reward;
   },
   close: closeInventory,
+  openVault,
+  vaultAvailable: () => !isGuest && !run,
 });
 function openInventory() {
-  if (!ready) return;
+  if (!ready || !activeCharacter) return;
   if (inventoryPanel.visible) {
     closeInventory();
     return;
@@ -600,7 +710,7 @@ function openInventory() {
     const profile = readProfile(),
       hero = CLASSES.find((h) => h.id === selected)!;
     menuInventory = {
-      hero,
+      hero: { ...hero, name: activeCharacter?.name || hero.name },
       inventory: profile.items,
       equipment: profile.loadouts[selected],
       maxHp: hero.hp,
@@ -621,12 +731,32 @@ function openInventory() {
   pointer.active = false;
   inventoryPanel.open();
 }
+const vaultPanel = createVaultPanel({
+  inventory: () => readProfile().items,
+  load: readVault,
+  icon: (id) => itemIcons[id],
+  transfer: async (item, direction, revision) => {
+    const result = await transferItem(item, direction, revision);
+    if (menuInventory) menuInventory.inventory = result.profile.items;
+    refreshStash();
+    return result.vault;
+  },
+});
+function openVault() {
+  if (!activeCharacter || isGuest || run) {
+    toast('Account vault is available from map selection when signed in.');
+    return;
+  }
+  inventoryPanel.hide();
+  void vaultPanel.open();
+}
+$('vault').onclick = openVault;
 const characterPanel = createCharacterPanel(() => {
   characterPanel.hide();
   closeInventory();
 });
 function openCharacter() {
-  if (!ready) return;
+  if (!ready || !activeCharacter) return;
   if (characterPanel.visible) {
     characterPanel.hide();
     closeInventory();
@@ -643,6 +773,7 @@ characterButton.textContent = 'CHARACTER · C';
 characterButton.onclick = openCharacter;
 document.body.append(characterButton);
 function refreshStash() {
+  $<HTMLButtonElement>('vault').disabled = !activeCharacter || isGuest || !!run;
   $('stash').textContent = 'INVENTORY · ' + readInventory().reduce((n, i) => n + i.quantity, 0);
 }
 $('stash').onclick = openInventory;
@@ -666,12 +797,17 @@ $('fullscreen').onclick = () => {
   else document.documentElement.requestFullscreen?.().catch(() => {});
 };
 function cards() {
-  $('cards').innerHTML = CLASSES.map(
-    (h, i) =>
-      `<button class="hero-card ${h.id === selected ? 'selected' : ''}" style="--accent:${h.color}" data-hero="${h.id}" aria-pressed="${h.id === selected}"><div class="card-top"><span>${h.role}</span><span>${h.id === selected ? '●' : `0${i + 1}`}</span></div><h3>${h.name}</h3><p>${h.description}</p><div class="card-skill"><span>${icons[h.id]}</span>${h.skill}</div></button>`,
-  ).join('');
+  $('cards').innerHTML = CLASSES.filter(
+    (hero) => !activeCharacter || hero.id === activeCharacter.class,
+  )
+    .map(
+      (h, i) =>
+        `<button class="hero-card ${h.id === selected ? 'selected' : ''}" style="--accent:${h.color}" data-hero="${h.id}" aria-pressed="${h.id === selected}"><div class="card-top"><span>${h.role}</span><span>${h.id === selected ? '●' : `0${i + 1}`}</span></div><h3>${h.name}</h3><p>${h.description}</p><div class="card-skill"><span>${icons[h.id]}</span>${h.skill}</div></button>`,
+    )
+    .join('');
   for (const el of document.querySelectorAll<HTMLButtonElement>('[data-hero]'))
     el.onclick = () => {
+      if (activeCharacter) return;
       selected = el.dataset.hero as HeroId;
       cards();
       startMusic();
@@ -688,7 +824,7 @@ function clearPlay() {
   dropLabels.replaceChildren();
   appearanceKey = '';
   spellEffects.clear();
-  if (heroModel) disposeActor(heroModel);
+  if (heroModel) disposeHeroModel();
   for (const enemy of enemies.values()) disposeActor(enemy);
   for (const shot of shots.values()) spellEffects.disposeProjectile(shot);
   for (const child of [...playGroup.children]) playGroup.remove(child);
@@ -699,10 +835,11 @@ function clearPlay() {
   lootModels.clear();
 }
 function start() {
-  if (!ready) return;
+  if (!ready || !activeCharacter || stageLoading) return;
   inventoryPanel.hide();
+  vaultPanel.hide();
   clearPlay();
-  run = createRun(selected);
+  run = createRun(selected, Math.random, currentStage);
   const profile = readProfile();
   run.inventory = profile.items;
   run.equipment = profile.loadouts[selected];
@@ -731,21 +868,42 @@ function start() {
   pointer.active = false;
   camera.position.set(0, 22, 20);
   camera.lookAt(0, 0, 0);
-  $('hero-name').textContent = run.hero.name.toUpperCase();
+  $('hero-name').textContent = activeCharacter!.name.toUpperCase();
+  $('run-world').textContent = `${run.stage.worldName.toUpperCase()} · MAP ${run.stage.mapNumber}`;
+  $('boss-name').textContent = `${run.stage.worldName.toUpperCase()} GUARDIAN`;
   $('skill-name').textContent = run.hero.skill;
   $('skill-icon').textContent = icons[selected];
   skillButtons();
+  refreshStash();
   startMusic();
   toast('The gates have fallen. Survive.');
 }
-$('begin').onclick = start;
+mountAccountFlow({
+  preview(hero, fresh) {
+    selected = hero;
+    characterPreview = true;
+    freshPreview = fresh;
+    menuGroup.visible = true;
+    if (ready) refreshPreviewGear();
+  },
+  stages(hero) {
+    refreshStash();
+    selected = hero;
+    characterPreview = false;
+    freshPreview = false;
+    menuGroup.visible = false;
+    if (ready) refreshPreviewGear();
+  },
+  play: start,
+});
 function goMenu() {
   inventoryPanel.hide();
   if (run) saveRunInventory(run);
   run = null;
+  refreshStash();
   refreshPreviewGear();
   clearPlay();
-  menuGroup.visible = true;
+  menuGroup.visible = characterPreview;
   playGroup.visible = false;
   $('menu').hidden = false;
   $('hud').hidden = true;
@@ -768,28 +926,12 @@ let lastPhase = '',
 function modal() {
   if (!run) return;
   const s = run;
-  const show = ['upgrade', 'paused', 'dead', 'won'].includes(s.phase);
+  const show = ['paused', 'dead', 'won'].includes(s.phase);
   $('overlay').hidden = !show;
   if (!show) return;
-  if (s.phase === 'upgrade') {
+  if (s.phase === 'paused') {
     $('modal').innerHTML =
-      `<span class="eyebrow">LEVEL ${s.level} · A JEWEL OF BLESSING</span><h2>Power answers the call.</h2><p>Choose one blessing for the battle ahead.</p><div class="upgrade-options">${s.choices
-        .map((id) => {
-          const u = upgradeDefinition(s, id)!;
-          return `<button class="upgrade" data-upgrade="${id}"><span>${u.icon}</span><b>${u.name}</b><p>${u.text}</p></button>`;
-        })
-        .join('')}</div>`;
-    for (const el of document.querySelectorAll<HTMLButtonElement>('[data-upgrade]'))
-      el.onclick = () => {
-        chooseUpgrade(s, el.dataset.upgrade!);
-        events();
-        skillButtons();
-        lastPhase = '';
-        modal();
-      };
-  } else if (s.phase === 'paused') {
-    $('modal').innerHTML =
-      '<span class="eyebrow">TAKE A BREATH</span><h2>The battle can wait.</h2><p>Move with WASD or arrows. Your skills attack automatically.<br>Collect blue jewels to grow stronger. Space or right click to dash.</p><div class="modal-actions"><button class="primary" id="resume">RESUME BATTLE</button><button class="secondary" id="leave">CHOOSE HERO</button></div>';
+      '<span class="eyebrow">TAKE A BREATH</span><h2>The battle can wait.</h2><p>Move with WASD or arrows. Stop moving to use your skills.<br>Collect blue jewels to grow stronger. Space or right click to dash.</p><div class="modal-actions"><button class="primary" id="resume">RESUME BATTLE</button><button class="secondary" id="leave">MAP SELECTION</button></div>';
     $('resume').onclick = () => {
       s.phase = 'playing';
       lastPhase = '';
@@ -801,7 +943,7 @@ function modal() {
       saved = bankRun(s);
     refreshStash();
     $('modal').innerHTML =
-      `<span class="eyebrow">${won ? 'LORENCIA STANDS' : 'EVERY LEGEND BEGINS SOMEWHERE'}</span><h2>${won ? 'You held the line.' : 'The horde prevails.'}</h2><p>${won ? 'Three minutes. Ten waves. One hero. The sanctuary lives another day.' : 'Return stronger. A different blessing can change everything.'}</p><div class="results"><div><b>${time(s.time)}</b><span>SURVIVED</span></div><div><b>${s.kills}</b><span>ENEMIES SLAIN</span></div><div><b>${s.level}</b><span>HERO LEVEL</span></div></div><div class="run-loot"><span class="eyebrow">COLLECTED · ${s.loot.collected.length} / 5</span><ul class="loot-list">${inventoryRows(s.loot.collected)}</ul><p>${saved.saved ? 'Saved to your stash for future stages.' : 'Browser storage unavailable; items could not be saved.'}</p></div><div class="modal-actions"><button class="primary" id="retry">PLAY AGAIN ↗</button><button class="secondary" id="leave">CHOOSE HERO</button><button class="secondary" id="end-inventory">INVENTORY</button></div>`;
+      `<span class="eyebrow">${won ? s.stage.worldName.toUpperCase() + ' STANDS' : 'EVERY LEGEND BEGINS SOMEWHERE'}</span><h2>${won ? 'You held the line.' : 'The horde prevails.'}</h2><p>${won ? 'Three minutes. Ten waves. One hero. The sanctuary lives another day.' : 'Return stronger. Your equipment makes the difference.'}</p><div class="results"><div><b>${time(s.time)}</b><span>SURVIVED</span></div><div><b>${s.kills}</b><span>ENEMIES SLAIN</span></div><div><b>${s.level}</b><span>HERO LEVEL</span></div></div><div class="run-loot"><span class="eyebrow">COLLECTED · ${s.loot.collected.length} / 12</span><ul class="loot-list">${inventoryRows(s.loot.collected)}</ul><p>${saved.saved ? 'Saved to your stash for future stages.' : 'Browser storage unavailable; items could not be saved.'}</p></div><div class="modal-actions"><button class="primary" id="retry">PLAY AGAIN ↗</button><button class="secondary" id="leave">MAP SELECTION</button><button class="secondary" id="end-inventory">INVENTORY</button></div>`;
     $('retry').onclick = start;
     $('leave').onclick = goMenu;
     $('end-inventory').onclick = openInventory;
@@ -825,7 +967,7 @@ function skillButtons() {
   $('skill-select').innerHTML = SKILLS[state.hero.id]
     .map((skill, i) => {
       const locked = !state.unlockedSkills.includes(skill.id);
-      return `<button class="skill-choice ${state.skill === skill.id ? 'active' : ''} ${locked ? 'locked' : ''}" data-skill="${skill.id}" aria-pressed="${state.skill === skill.id}" ${locked ? 'disabled' : ''} title="${locked ? 'Learn this skill when you level up.' : skill.description}"><span class="mu-skill-icon" style="background-position:${-((skill.icon - 1) % 8) * 20}px ${-Math.floor((skill.icon - 1) / 8) * 28}px"></span><kbd>${locked ? 'LOCKED' : i + 1}</kbd><b>${skill.name}</b></button>`;
+      return `<button class="skill-choice ${state.skill === skill.id ? 'active' : ''} ${locked ? 'locked' : ''}" data-skill="${skill.id}" aria-pressed="${state.skill === skill.id}" ${locked ? 'disabled' : ''} title="${locked ? 'Skill unavailable.' : skill.description}"><span class="mu-skill-icon" style="background-position:${-((skill.icon - 1) % 8) * 20}px ${-Math.floor((skill.icon - 1) / 8) * 28}px"></span><kbd>${locked ? 'LOCKED' : i + 1}</kbd><b>${skill.name}</b></button>`;
     })
     .join('');
   for (const button of document.querySelectorAll<HTMLButtonElement>('[data-skill]'))
@@ -839,6 +981,16 @@ $('dash-button').onclick = () => {
   dashRequested = true;
 };
 addEventListener('keydown', (e) => {
+  if (vaultPanel.visible) {
+    if (e.code === 'Escape') vaultPanel.hide();
+    return;
+  }
+  if (
+    (e.target instanceof HTMLElement &&
+      e.target.closest('input, select, textarea, [contenteditable]')) ||
+    !document.getElementById('account-gate')?.hidden
+  )
+    return;
   if (e.code === 'KeyC' && !e.repeat) {
     openCharacter();
     return;
@@ -990,6 +1142,7 @@ function renderRun(dt: number, t: number) {
   heroModel.userData.body.rotation.x = s.hitFlash > 0 ? Math.sin(s.hitFlash * 28) * 0.06 : 0;
   heroModel.visible = true;
   updateArmor(heroModel, t);
+  animateCompanion(heroModel, t, dt);
   flashActor(heroModel, s.hitFlash / 0.32, '#ff6050');
   $('hit-vignette').style.opacity = String((s.hitFlash / 0.32) * 0.75);
   protectionAura.position.copy(heroModel.position);
@@ -1065,6 +1218,7 @@ function renderRun(dt: number, t: number) {
       );
       m.rotation.y = t * 0.7;
       updateArmor(m, t);
+      animateCompanion(m, t);
     },
     (m) => disposeActor(m),
   );
@@ -1136,10 +1290,10 @@ function renderRun(dt: number, t: number) {
   );
   $('horde-count').textContent = `${s.enemies.length} ENEMIES IN THE ARENA`;
   const pieceCount = Object.entries(s.equipment).filter(
-    ([slot, item]) => slot !== 'weapon' && item,
+    ([slot, item]) => BODY_SLOTS.includes(slot as EquipmentSlot) && item,
   ).length;
   $('gear-status').textContent =
-    `${pieceCount ? pieceCount + '/5 armor pieces' : 'Unarmored'}${s.equipment.weapon ? ' · ' + ITEMS[s.equipment.weapon.id].name : ''}${s.auraLevel ? ' · AURA ' + s.auraLevel : ''}`;
+    `${pieceCount ? pieceCount + '/5 armor pieces' : 'Unarmored'}${s.equipment.weapon ? ' · ' + ITEMS[s.equipment.weapon.id].name : ''}${s.equipment.shield ? ' · Shield' : ''}${s.equipment.wings ? ' · Wings' : ''}${s.equipment.pet ? ' · ' + ITEMS[s.equipment.pet.id].name : ''}${s.auraLevel ? ' · Protection aura' : ''}`;
   if (lastWave !== s.wave) {
     lastWave = s.wave;
     toast(`Wave ${s.wave} · ${waveNames[s.wave - 1]}`);
@@ -1148,7 +1302,7 @@ function renderRun(dt: number, t: number) {
   $('boss-health').hidden = !boss;
   if (boss) $('boss-fill').style.width = `${Math.max(0, (boss.hp / boss.maxHp) * 100)}%`;
   if (s.time >= DURATION && !s.bossDefeated)
-    $('objective').textContent = 'Finish the Lorencia Guardian';
+    $('objective').textContent = 'Finish the ' + s.stage.worldName + ' Guardian';
   else $('objective').textContent = 'Survive 03:00 · defeat the guardian';
   if (lastPhase !== s.phase) {
     lastPhase = s.phase;
@@ -1213,17 +1367,8 @@ function events() {
       spellEffects.burst(state.x, state.z, '#ff7f80', 12, 0.8);
       effect('hurt-' + state.hero.id);
     } else if (e.type === 'level') effect('level-up');
-    else if (e.type === 'reward') {
-      effect('level-up');
-      toast(
-        e.id === 'unlock-skill'
-          ? 'New skill learned'
-          : e.id === 'aura'
-            ? 'Aura awakened'
-            : 'Blessing acquired',
-      );
-    } else if (e.type === 'surge') toast('Wave ' + e.wave + ' · The horde surges!');
-    else if (e.type === 'boss') toast('The Lorencia Guardian awakens.');
+    else if (e.type === 'surge') toast('Wave ' + e.wave + ' · The horde surges!');
+    else if (e.type === 'boss') toast('The ' + state.stage.worldName + ' Guardian awakens.');
   }
 }
 function resize() {
@@ -1249,16 +1394,21 @@ function animate(ms: number) {
     lastPhase = '';
     lastWave = 1;
     accumulator = 0;
+    menuGroup.visible = characterPreview;
+    for (const child of menuGroup.children)
+      if (child.userData.previewHero) child.visible = child.userData.previewHero === selected;
     const previewX = heroPreviews[selected]?.position.x || 0;
-    camera.position.set(innerWidth < 700 ? previewX : 9.5, 10, innerWidth < 700 ? 23 : 25);
-    camera.lookAt(innerWidth < 700 ? previewX : 4.5, 0.2, -3);
+    camera.position.set(previewX + (innerWidth < 700 ? 0 : 5), 8, innerWidth < 700 ? 19 : 22);
+    camera.lookAt(previewX + (innerWidth < 700 ? 0 : 4), 1.5, -3);
     for (const h of CLASSES) {
       const m = heroPreviews[h.id];
       if (m) {
+        m.visible = h.id === selected;
         m.rotation.y = Math.sin(t * 0.35) * 0.14 - 0.2;
         m.position.y = heightAt(m.position.x, m.position.z);
         setPose(m, 'idle', t);
         updateArmor(m, t);
+        animateCompanion(m, t);
         m.scale.setScalar(h.id === selected ? 1 : 0.9);
       }
     }
@@ -1311,8 +1461,7 @@ async function init() {
     ready = true;
     refreshPreviewGear();
     $('loading').hidden = true;
-    $<HTMLButtonElement>('begin').disabled = false;
-    $('begin').innerHTML = 'ENTER LORENCIA <span>↗</span>';
+    worldSelection.enable();
     requestAnimationFrame(animate);
   } catch (error) {
     console.error(error);

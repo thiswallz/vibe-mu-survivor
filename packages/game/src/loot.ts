@@ -8,7 +8,7 @@ import type {
   EquipmentSlot,
 } from '@mu-survivor/models';
 import { ARMOR_ITEMS, itemKey, validEnhancement } from './equipment.js';
-export const LOOT_LIMIT = 5;
+export const LOOT_LIMIT = 12;
 export const ITEMS: Readonly<Record<string, ItemDefinition>> = Object.freeze({
   'kundun-box': {
     id: 'kundun-box',
@@ -48,7 +48,34 @@ export const ITEMS: Readonly<Record<string, ItemDefinition>> = Object.freeze({
   },
   ...ARMOR_ITEMS,
 });
-const milestones = [4, 15, 35, 65];
+const milestones = [4, 10, 18, 28, 40, 55, 72, 92, 115, 140, 170];
+const accessoryDrops = [
+  'ring-ice',
+  'ring-fire',
+  'pendant-lightning',
+  'shield-round',
+  'wings-angel',
+  'pet-angel',
+  'pet-satan',
+  'jewel-bless',
+  'jewel-soul',
+  'jewel-life',
+  'jewel-chaos',
+];
+export function equipmentDropId(hero: HeroId, slot: EquipmentSlot) {
+  return (
+    (
+      {
+        ringLeft: 'ring-ice',
+        ringRight: 'ring-fire',
+        pendant: 'pendant-lightning',
+        shield: 'shield-round',
+        wings: 'wings-angel',
+        pet: 'pet-angel',
+      } as Partial<Record<EquipmentSlot, string>>
+    )[slot] || `${hero}-${slot}`
+  );
+}
 export function createLootState(): LootState {
   return { drops: [], collected: [], dropped: 0 };
 }
@@ -60,13 +87,20 @@ export function dropLoot(
   run?: GameState,
 ) {
   if (state.dropped >= LOOT_LIMIT) return null;
-  if (!enemy.elite && (state.dropped >= 4 || kills < milestones[state.dropped])) return null;
+  if (!enemy.elite && (state.dropped >= milestones.length || kills < milestones[state.dropped]))
+    return null;
   const index = state.dropped;
   const id = enemy.elite
     ? 'kundun-box'
     : run
-      ? `${run.hero.id}-${run.dropSlots[index]}`
-      : ['kundun-box', 'jewel-bless', 'jewel-soul', 'jewel-life'][index];
+      ? index === 0
+        ? equipmentDropId(run.hero.id, run.dropSlots[0])
+        : index % 2 === 1
+          ? accessoryDrops[
+              Math.min(accessoryDrops.length - 1, Math.floor(run.random() * accessoryDrops.length))
+            ]
+          : equipmentDropId(run.hero.id, run.dropSlots[index % run.dropSlots.length])
+      : ['kundun-box', 'jewel-bless', 'jewel-soul', 'jewel-life'][index % 4];
   const enhancement =
     ITEMS[id].kind === 'equipment' ? rollEnhancement(run?.random || Math.random) : 0;
   const drop = { uid: nextId(), id, enhancement, x: enemy.x, z: enemy.z };
@@ -122,7 +156,7 @@ export function openKundun(
   const rest = takeItem(items, { id: 'kundun-box' });
   if (!rest) return null;
   const reward = {
-    id: `${hero}-${slot}`,
+    id: equipmentDropId(hero, slot),
     enhancement: rollEnhancement(random),
     quantity: 1,
   };

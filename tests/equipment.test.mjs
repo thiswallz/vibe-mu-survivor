@@ -146,3 +146,75 @@ test('full +13 armor aura requires all five armor slots and ignores weapon', () 
   s.equipment.boots = null;
   assert.equal(hasEnhancedArmorSet(s.equipment), false);
 });
+
+test('rings fit either hand, universal accessories work for all classes, and pets own aura', () => {
+  for (const hero of ['knight', 'wizard', 'elf']) {
+    const s = createRun(hero);
+    const startingDamage = s.damage;
+    s.inventory = [
+      { id: 'ring-ice', enhancement: 3, quantity: 2 },
+      { id: 'pet-angel', enhancement: 0, quantity: 1 },
+      { id: 'pet-satan', enhancement: 0, quantity: 1 },
+      { id: 'pendant-lightning', enhancement: 0, quantity: 1 },
+    ];
+    assert.ok(equipItem(s, s.inventory[0], 'ringLeft'));
+    assert.ok(equipItem(s, s.inventory[0], 'ringRight'));
+    assert.equal(
+      s.inventory.some((item) => item.id === 'ring-ice'),
+      false,
+    );
+    assert.equal(s.auraLevel, 0);
+    assert.ok(
+      equipItem(
+        s,
+        s.inventory.find((item) => item.id === 'pet-angel'),
+      ),
+    );
+    assert.equal(s.auraLevel, 1);
+    assert.ok(
+      equipItem(
+        s,
+        s.inventory.find((item) => item.id === 'pet-satan'),
+      ),
+    );
+    assert.equal(s.auraLevel, 0);
+    assert.ok(s.damage > startingDamage);
+    assert.ok(unequipSlot(s, 'pet'));
+    assert.equal(s.damage, startingDamage);
+    assert.ok(
+      equipItem(
+        s,
+        s.inventory.find((item) => item.id === 'pendant-lightning'),
+      ),
+    );
+    assert.ok(s.damage > startingDamage);
+    assert.equal(
+      equipItem(
+        s,
+        s.inventory.find((item) => item.id === 'pet-angel'),
+        'ringRight',
+      ),
+      false,
+    );
+  }
+});
+
+test('Guardian Angel aura damages nearby enemies only while the pet is worn', () => {
+  const s = createRun('knight');
+  s.inventory = [{ id: 'pet-angel', quantity: 1, enhancement: 0 }];
+  equipItem(s, s.inventory[0]);
+  s.spawnTimer = 100;
+  s.attackTimer = 100;
+  const enemy = spawnEnemy(s, 4);
+  enemy.x = 3;
+  enemy.z = 0;
+  enemy.speed = 0;
+  const hp = enemy.hp;
+  tick(s, 0.02);
+  assert.ok(enemy.hp < hp);
+  unequipSlot(s, 'pet');
+  const after = enemy.hp;
+  s.auraTimer = 0;
+  tick(s, 0.02);
+  assert.equal(enemy.hp, after);
+});

@@ -1,13 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {
-  CLASSES,
-  createRun,
-  tick,
-  spawnEnemy,
-  chooseUpgrade,
-  ARENA,
-} from '../packages/game/dist/index.js';
+import { CLASSES, createRun, tick, spawnEnemy, ARENA } from '../packages/game/dist/index.js';
 test('all three heroes can defeat a nearby enemy with automatic attacks', () => {
   for (const hero of CLASSES) {
     const s = createRun(hero.id, () => 0.5);
@@ -20,19 +13,23 @@ test('all three heroes can defeat a nearby enemy with automatic attacks', () => 
     assert.ok(s.gems.length + s.xp > 0 || s.level > 1);
   }
 });
-test('jewels award a level and upgrades pause the simulation', () => {
+test('XP levels never pause combat or grant equipment, aura, or bonus stats', () => {
   const s = createRun('knight');
-  s.gems.push({ uid: 1, x: 0, z: 0, xp: 12 });
+  s.spawnTimer = 100;
+  const before = { damage: s.damage, hp: s.maxHp, speed: s.speed, cooldown: s.cooldown };
+  s.gems.push({ uid: 1, x: 0, z: 0, xp: 1000 });
   tick(s, 1 / 60);
-  assert.equal(s.phase, 'upgrade');
-  const t = s.time;
-  tick(s, 1);
-  assert.equal(s.time, t);
-  assert.equal(s.level, 2);
-  assert.ok(chooseUpgrade(s, s.choices[0]));
+  assert.ok(s.level > 2);
   assert.equal(s.phase, 'playing');
-  assert.equal(s.pendingLevels, 0);
+  assert.equal(s.auraLevel, 0);
+  assert.deepEqual({ damage: s.damage, hp: s.maxHp, speed: s.speed, cooldown: s.cooldown }, before);
+  assert.equal(s.inventory.length, 0);
+  const time = s.time;
+  tick(s, 1 / 60, { x: 1 });
+  assert.ok(s.time > time);
+  assert.ok(s.x > 0);
 });
+
 test('dash has a cooldown and arena boundaries cannot be crossed', () => {
   const s = createRun('elf');
   s.spawnTimer = 100;
@@ -120,38 +117,15 @@ test('walking into an obstacle freezes the stride instead of running in place', 
   assert.equal(s.travel, 0);
 });
 
-test('second skill is learned as a level-up reward and cannot be used while locked', async () => {
+test('both class skills are available without level-up rewards', async () => {
   const { SKILLS, setSkill } = await import('../packages/game/dist/index.js');
-  const s = createRun('wizard');
-  assert.equal(setSkill(s, SKILLS.wizard[1].id), false);
-  s.gems.push({ uid: 1, x: 0, z: 0, xp: 12 });
-  tick(s, 1 / 60);
-  assert.ok(s.choices.includes('unlock-skill'));
-  chooseUpgrade(s, 'unlock-skill');
-  assert.ok(s.unlockedSkills.includes('hellfire'));
-  assert.equal(s.skill, 'hellfire');
+  for (const hero of CLASSES) {
+    const s = createRun(hero.id);
+    assert.ok(setSkill(s, SKILLS[hero.id][1].id));
+    assert.equal(s.skill, SKILLS[hero.id][1].id);
+  }
 });
-test('level rewards never grant armor or enhancement; aura remains a blessing', async () => {
-  const { rewardOptions } = await import('../packages/game/dist/index.js');
-  const s = createRun('knight');
-  s.level = 8;
-  const rewards = rewardOptions(s);
-  assert.ok(!rewards.some((r) => r.id === 'armor' || r.id.startsWith('enhance')));
-  s.phase = 'upgrade';
-  s.choices = ['aura'];
-  s.pendingLevels = 1;
-  chooseUpgrade(s, 'aura');
-  assert.equal(s.auraLevel, 1);
-  const e = spawnEnemy(s, 4);
-  e.x = 3;
-  e.z = 0;
-  e.speed = 0;
-  s.spawnTimer = 100;
-  s.attackTimer = 100;
-  const before = e.hp;
-  tick(s, 0.02);
-  assert.ok(e.hp < before);
-});
+
 test('wave finales spawn substantially larger packs and emit a surge cue', () => {
   const regular = createRun('knight', () => 0.5);
   regular.time = 10;

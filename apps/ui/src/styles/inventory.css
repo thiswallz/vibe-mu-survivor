@@ -456,3 +456,155 @@ body.playing #stash {
     right: 10px;
   }
 }
+/* Twelve MU equipment slots, including accessories and a wearable companion. */
+.inventory-window {
+  width: min(540px, calc(100vw - 32px));
+}
+.equipment-slots {
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: 78px 78px 65px;
+}
+.slot-shield {
+  grid-column: 4;
+  grid-row: 1;
+}
+.slot-wings {
+  grid-column: 4;
+  grid-row: 2;
+}
+.slot-ringLeft {
+  grid-column: 1;
+  grid-row: 3;
+}
+.slot-pendant {
+  grid-column: 2;
+  grid-row: 3;
+}
+.slot-ringRight {
+  grid-column: 3;
+  grid-row: 3;
+}
+.slot-pet {
+  grid-column: 4;
+  grid-row: 3;
+}
+.accessory-outline {
+  font-size: 30px;
+  color: #a4946a;
+  opacity: 0.5;
+}
+.equipment-slot img {
+  max-height: calc(100% - 14px);
+}
+.vault-link {
+  width: 100%;
+  padding: 12px;
+  margin-top: 12px;
+  color: #f0d39c;
+  background: #212a25;
+  border: 1px solid #80734b;
+}
+.vault-link:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+#vault-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: #030707b8;
+}
+#vault-overlay[hidden] {
+  display: none;
+}
+.vault-window {
+  width: min(100%, 900px);
+  max-height: 90vh;
+  overflow: auto;
+  border: 2px solid #8e7954;
+  padding: 22px;
+  background: linear-gradient(#272724, #101513);
+  color: #e6d9bb;
+}
+.vault-window header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.vault-window h2 {
+  font:
+    28px Georgia,
+    serif;
+  margin: 0;
+}
+.vault-window header button {
+  color: #f2d7a2;
+  background: transparent;
+  border: 1px solid #9d885b;
+  font-size: 24px;
+  padding: 2px 10px;
+}
+.vault-window > p {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #b6b6a7;
+}
+.vault-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+.vault-columns section {
+  border: 1px solid #6e6041;
+  padding: 14px;
+  min-width: 0;
+}
+.vault-columns h3 {
+  font:
+    18px Georgia,
+    serif;
+  margin: 0 0 14px;
+}
+.vault-item {
+  width: 100%;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  text-align: left;
+  margin: 6px 0;
+  padding: 8px;
+  background: #0c1512;
+  color: #e9dbb7;
+  border: 1px solid #655a42;
+}
+.vault-item img {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
+.vault-item span {
+  flex: 1;
+  font-size: 12px;
+}
+.vault-item b {
+  font-size: 9px;
+  color: #e9c88d;
+}
+.vault-item:disabled {
+  opacity: 0.6;
+}
+@media (max-width: 600px) {
+  .vault-columns {
+    grid-template-columns: 1fr;
+  }
+  #inventory-overlay {
+    padding: 12px;
+  }
+  .inventory-window {
+    max-height: 94vh;
+  }
+}

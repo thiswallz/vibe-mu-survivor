@@ -82,5 +82,19 @@
     "wizard": "Player/*Class01.bmd",
     "elf": "Player/*Class03.bmd"
   },
-  "equipmentModels": "Item armor pieces and Sword16.bmd / Staff12.bmd / Bow06.bmd; see manifest.json"
+  "equipmentModels": "Item armor pieces and Sword16.bmd / Staff12.bmd / Bow06.bmd; see manifest.json",
+  "additionalAssets": {
+    "sourceClient": "Nexus MU Online/Data",
+    "catalog": "assets/accessory-catalog.json",
+    "conversion": "scripts/convert-extra-assets.py"
+  },
+  "additionalWorlds": {
+    "sourceClient": "Nexus MU Online/Data",
+    "catalog": "assets/world-catalog.json",
+    "conversion": "scripts/convert-world-assets.py",
+    "music": [
+      "Music/Noria.mp3",
+      "Music/Devias.mp3"
+    ]
+  }
 }

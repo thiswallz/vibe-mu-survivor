@@ -1,7 +1,19 @@
 export type HeroId = 'knight' | 'wizard' | 'elf';
 export type MonsterId = 'spider' | 'budge' | 'bull' | 'hound' | 'giant';
 export type SkillId = 'slash' | 'stab' | 'evil' | 'hellfire' | 'multishot' | 'icearrow';
-export type EquipmentSlot = 'helm' | 'armor' | 'pants' | 'gloves' | 'boots' | 'weapon';
+export type EquipmentSlot =
+  | 'helm'
+  | 'armor'
+  | 'pants'
+  | 'gloves'
+  | 'boots'
+  | 'weapon'
+  | 'shield'
+  | 'ringLeft'
+  | 'ringRight'
+  | 'pendant'
+  | 'wings'
+  | 'pet';
 export interface PointXZ {
   x: number;
   z: number;
@@ -24,6 +36,8 @@ export interface ItemDefinition {
   kind: 'equipment' | 'box' | 'jewel';
   hero?: HeroId;
   slot?: EquipmentSlot;
+  slots?: EquipmentSlot[];
+  bonuses?: { defense?: number; vitality?: number; attackPower?: number; aura?: number };
   description?: string;
 }
 export interface LootDrop extends PointXZ {
@@ -69,6 +83,7 @@ export interface EquipmentActor {
   gearHp?: number;
   gearDefense?: number;
   gearWeaponPower?: number;
+  auraLevel?: number;
   armorEquipped?: boolean;
   enhancement?: number;
 }
@@ -120,7 +135,7 @@ export interface Obstacle {
   minZ: number;
   maxZ: number;
 }
-export type Phase = 'playing' | 'paused' | 'upgrade' | 'dead' | 'won';
+export type Phase = 'playing' | 'paused' | 'dead' | 'won';
 export interface EventMap {
   attack: PointXZ & { hero: HeroId; skill: SkillId; facing: number; range: number };
   hit: PointXZ & { uid: number; id: MonsterId; size: number; damage: number; critical: boolean };
@@ -134,7 +149,6 @@ export interface EventMap {
   ice: PointXZ;
   burst: PointXZ;
   'aura-pulse': PointXZ;
-  reward: { id: string };
   surge: { wave: number };
   level: object;
   dash: object;
@@ -143,6 +157,7 @@ export interface EventMap {
 }
 export type GameEvent = { [K in keyof EventMap]: { type: K } & EventMap[K] }[keyof EventMap];
 export interface GameState extends EquipmentActor, PointXZ {
+  stage: StageDefinition;
   hero: HeroDefinition;
   random: () => number;
   loot: LootState;
@@ -193,8 +208,6 @@ export interface GameState extends EquipmentActor, PointXZ {
   bossSpawned: boolean;
   bossDefeated: boolean;
   nextId: number;
-  choices: string[];
-  pendingLevels: number;
   lootBanked?: boolean;
   lootSaveResult?: InventorySaveResult;
 }
@@ -269,4 +282,56 @@ export interface PropData {
   models: string[];
   objects: PropPlacement[];
   source: string;
+}
+
+export interface CharacterSummary {
+  id: number;
+  name: string;
+  class: HeroId;
+}
+export interface AccountResponse {
+  username: string;
+  characters: CharacterSummary[];
+}
+
+export interface VaultSnapshot {
+  items: InventoryItem[];
+  revision: number;
+}
+export interface CharacterProfileResponse {
+  profile: InventoryProfile | null;
+  revision: number;
+}
+export interface VaultTransferRequest {
+  characterId: number;
+  direction: 'deposit' | 'withdraw';
+  item: InventoryItem;
+  characterRevision: number;
+  vaultRevision: number;
+}
+export interface VaultTransferResponse {
+  profile: InventoryProfile;
+  revision: number;
+  vault: VaultSnapshot;
+}
+
+export interface StageDefinition {
+  id: string;
+  worldId: string;
+  worldName: string;
+  worldNumber: number;
+  mapNumber: number;
+  name: string;
+  description: string;
+  difficulty: string;
+  terrain: string;
+  objects: string;
+  texture: string;
+  fog: string;
+  ground: string;
+  sun: string;
+  enemyHealth: number;
+  enemyDamage: number;
+  spawnRate: number;
+  enemyOrder: number[];
 }

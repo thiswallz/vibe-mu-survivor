@@ -1,0 +1,33 @@
+{
+  "sourceClient": "Nexus MU Online",
+  "items": {
+    "ring-ice": {
+      "source": "Item/Ring01.bmd",
+      "model": "loot-ring-ice"
+    },
+    "ring-fire": {
+      "source": "Item/Ring02.bmd",
+      "model": "loot-ring-fire"
+    },
+    "pendant-lightning": {
+      "source": "Item/Necklace01.bmd",
+      "model": "loot-pendant-lightning"
+    },
+    "shield-round": {
+      "source": "Item/Shield01.bmd",
+      "model": "loot-shield-round"
+    },
+    "wings-angel": {
+      "source": "Item/Wing02.bmd",
+      "model": "loot-wings-angel"
+    },
+    "pet-angel": {
+      "source": "Player/Helper01.bmd",
+      "model": "loot-pet-angel"
+    },
+    "pet-satan": {
+      "source": "Player/Helper02.bmd",
+      "model": "loot-pet-satan"
+    }
+  }
+}

@@ -1,3 +1,5 @@
+import { DEFAULT_STAGE } from './stage.js';
+import type { StageDefinition } from '@mu-survivor/models';
 import type {
   HeroId,
   SkillId,
@@ -6,7 +8,6 @@ import type {
   EnemyDefinition,
   Enemy,
   SkillDefinition,
-  UpgradeDefinition,
   PointXZ,
   Obstacle,
   InputState,
@@ -199,91 +200,6 @@ export const ARMOR = {
   wizard: { name: 'Grand Soul Set', model: 'wizard-armor' },
   elf: { name: 'Guardian Set', model: 'elf-armor' },
 };
-export const UPGRADES: UpgradeDefinition[] = [
-  {
-    id: 'critical',
-    icon: '✧',
-    name: 'Critical precision',
-    text: 'Gain 8% critical chance. Critical hits deal 50% more damage.',
-    apply: (s) => (s.criticalChance = Math.min(0.44, s.criticalChance + 0.08)),
-  },
-  {
-    id: 'damage',
-    icon: '✦',
-    name: 'Greater power',
-    text: 'All attacks deal 25% more damage.',
-    apply: (s) => (s.damage *= 1.25),
-  },
-  {
-    id: 'haste',
-    icon: 'ϟ',
-    name: 'Spell haste',
-    text: 'Attack 15% faster.',
-    apply: (s) => (s.cooldown = Math.max(0.18, s.cooldown * 0.85)),
-  },
-  {
-    id: 'speed',
-    icon: '➶',
-    name: 'Wind walker',
-    text: 'Move 12% faster.',
-    apply: (s) => (s.speed *= 1.12),
-  },
-  {
-    id: 'magnet',
-    icon: '◇',
-    name: 'Jewel seeker',
-    text: 'Collect jewels from 40% farther away.',
-    apply: (s) => (s.magnet *= 1.4),
-  },
-  {
-    id: 'vitality',
-    icon: '♡',
-    name: 'Blessing of life',
-    text: 'Gain 30 maximum health and restore 50.',
-    apply: (s) => {
-      s.maxHp += 30;
-      s.hp = Math.min(s.maxHp, s.hp + 50);
-    },
-  },
-  {
-    id: 'multishot',
-    icon: '⋔',
-    name: 'Echoing strike',
-    text: 'Add a projectile or widen your slash.',
-    apply: (s) => {
-      s.projectiles++;
-      s.slashRange += 0.5;
-    },
-  },
-];
-export function rewardOptions(s: GameState): UpgradeDefinition[] {
-  const rewards: UpgradeDefinition[] = [];
-  if (s.level >= 2 && !s.unlockedSkills.includes(SKILLS[s.hero.id][1].id))
-    rewards.push({
-      id: 'unlock-skill',
-      icon: '✦',
-      name: 'Learn ' + SKILLS[s.hero.id][1].name,
-      text: 'Unlock a new skill and equip it. Switch with 1 / 2.',
-      apply: (s) => {
-        s.unlockedSkills.push(SKILLS[s.hero.id][1].id);
-        s.skill = SKILLS[s.hero.id][1].id;
-      },
-    });
-  if (s.level >= 3 && s.auraLevel < 2)
-    rewards.push({
-      id: 'aura',
-      icon: '◉',
-      name: s.auraLevel ? 'Greater aura' : 'Aura of protection',
-      text: 'Orbiting energy damages nearby enemies and protects you.',
-      apply: (s) => {
-        s.auraLevel++;
-      },
-    });
-  return rewards;
-}
-export function upgradeDefinition(s: GameState, id: string) {
-  return [...UPGRADES, ...rewardOptions(s)].find((u) => u.id === id);
-}
 const dist = (a: PointXZ, b: PointXZ) => Math.hypot(a.x - b.x, a.z - b.z);
 export function positionClear(x: number, z: number, obstacles: Obstacle[] = [], radius = 0.42) {
   return !obstacles.some(
@@ -304,10 +220,15 @@ export function moveEntity(
   if (positionClear(entity.x, entity.z + dz, obstacles, radius)) entity.z += dz;
   return Math.hypot(entity.x - beforeX, entity.z - beforeZ);
 }
-export function createRun(id: HeroId, random = Math.random): GameState {
+export function createRun(
+  id: HeroId,
+  random = Math.random,
+  stage: StageDefinition = DEFAULT_STAGE,
+): GameState {
   const hero = CLASSES.find((c) => c.id === id);
   if (!hero) throw new Error('Unknown class');
   return {
+    stage,
     hero,
     random,
     loot: createLootState(),
@@ -320,7 +241,7 @@ export function createRun(id: HeroId, random = Math.random): GameState {
     criticalMultiplier: 1.5,
     monsterVoiceTimer: 1,
     skill: SKILLS[id][0].id,
-    unlockedSkills: [SKILLS[id][0].id],
+    unlockedSkills: SKILLS[id].map((skill) => skill.id),
     auraLevel: 0,
     auraTimer: 0,
     armorEquipped: false,
@@ -363,8 +284,6 @@ export function createRun(id: HeroId, random = Math.random): GameState {
     bossSpawned: false,
     bossDefeated: false,
     nextId: 1,
-    choices: [],
-    pendingLevels: 0,
   };
 }
 function event<K extends keyof EventMap>(
@@ -378,9 +297,10 @@ export function spawnEnemy(s: GameState, type: number, elite = false): Enemy | n
   const a = s.random() * Math.PI * 2,
     r = 12 + s.random() * 6;
   const def = ENEMIES[type];
-  const scale = 1 + (s.wave - 1) * 0.095;
+  const scale = (1 + (s.wave - 1) * 0.095) * s.stage.enemyHealth;
   const e: Enemy = {
     ...def,
+    damage: def.damage * s.stage.enemyDamage,
     uid: s.nextId++,
     type,
     x: Math.max(-ARENA + 1, Math.min(ARENA - 1, s.x + Math.cos(a) * r)),
@@ -393,8 +313,8 @@ export function spawnEnemy(s: GameState, type: number, elite = false): Enemy | n
   if (elite) {
     e.size = 4.5;
     e.speed = 2;
-    e.damage = 28;
-    e.name = 'Lorencia Guardian';
+    e.damage = 28 * s.stage.enemyDamage;
+    e.name = s.stage.worldName + ' Guardian';
   }
   if (!positionClear(e.x, e.z, s.obstacles, e.size * 0.24)) {
     for (let i = 0; i < 24; i++) {
@@ -434,27 +354,6 @@ function hurt(s: GameState, e: Enemy, damage: number) {
     if (e.elite) s.bossDefeated = true;
   }
 }
-function levelUp(s: GameState) {
-  s.phase = 'upgrade';
-  const special = rewardOptions(s);
-  const featured = special.find((u) => u.id === 'unlock-skill' && s.level % 2 === 0) || special[0];
-  const basics = [...UPGRADES].sort(() => s.random() - 0.5).slice(0, featured ? 2 : 3);
-  s.choices = [...(featured ? [featured] : []), ...basics].map((u) => u.id);
-  event(s, 'level');
-}
-export function chooseUpgrade(s: GameState, id: string) {
-  if (s.phase !== 'upgrade' || !s.choices.includes(id)) return false;
-  const upgrade = upgradeDefinition(s, id);
-  if (!upgrade) return false;
-  s.events = [];
-  upgrade.apply(s);
-  event(s, 'reward', { id });
-  s.choices = [];
-  s.pendingLevels--;
-  if (s.pendingLevels > 0) levelUp(s);
-  else s.phase = 'playing';
-  return true;
-}
 export function tick(s: GameState, dt: number, input: InputState = {}) {
   s.events = [];
   if (s.phase !== 'playing') return;
@@ -468,6 +367,12 @@ export function tick(s: GameState, dt: number, input: InputState = {}) {
   let mx = input.x || 0,
     mz = input.z || 0;
   const len = Math.hypot(mx, mz);
+  if (input.dash && len > 0 && s.dashCooldown <= 0) s.attackAnimation = 0;
+  const casting = s.attackAnimation > 0;
+  if (casting) {
+    mx = 0;
+    mz = 0;
+  }
   if (len > 1) {
     mx /= len;
     mz /= len;
@@ -486,7 +391,7 @@ export function tick(s: GameState, dt: number, input: InputState = {}) {
   const moved = moveEntity(s, dx, dz, s.obstacles);
   s.travel += moved;
   s.moving = moved > 0.0001;
-  if (len > 0.01) s.facing = Math.atan2(mx, mz);
+  if (len > 0.01 && !casting) s.facing = Math.atan2(mx, mz);
   s.spawnTimer -= dt;
   const surge = s.time % WAVE_SECONDS >= WAVE_SECONDS - SURGE_SECONDS;
   if (surge && s.lastSurgeWave !== s.wave) {
@@ -497,8 +402,8 @@ export function tick(s: GameState, dt: number, input: InputState = {}) {
     const unlocked = Math.min(5, 1 + Math.floor((s.wave - 1) / 2));
     const pack = s.time < 1.5 ? 6 : surge ? 5 + s.wave : 2 + Math.floor((s.wave - 1) / 3);
     for (let i = 0; i < pack && s.enemies.length < MAX_ENEMIES - 1; i++)
-      spawnEnemy(s, Math.floor(s.random() * unlocked));
-    s.spawnTimer = Math.max(0.24, 0.9 - s.wave * 0.035) * (surge ? 0.52 : 1);
+      spawnEnemy(s, s.stage.enemyOrder[Math.floor(s.random() * unlocked)]);
+    s.spawnTimer = (Math.max(0.24, 0.9 - s.wave * 0.035) * (surge ? 0.52 : 1)) / s.stage.spawnRate;
   }
   if (s.time >= DURATION - WAVE_SECONDS && !s.bossSpawned) {
     const guardian = spawnEnemy(s, 4, true);
@@ -509,7 +414,7 @@ export function tick(s: GameState, dt: number, input: InputState = {}) {
   }
   s.attackTimer -= dt;
   const living = s.enemies.filter((e) => e.hp > 0);
-  if (s.attackTimer <= 0 && living.length) {
+  if (s.attackTimer <= 0 && living.length && len < 0.01 && s.dashTime <= 0 && !casting) {
     const nearest = [...living].sort((a, b) => dist(a, s) - dist(b, s));
     const skill = SKILLS[s.hero.id].find((k) => k.id === s.skill)!;
     const range = skill.id === 'slash' ? s.slashRange : skill.range;
@@ -649,7 +554,7 @@ export function tick(s: GameState, dt: number, input: InputState = {}) {
   while (s.xp >= s.xpNeeded) {
     s.xp -= s.xpNeeded;
     s.level++;
-    s.pendingLevels++;
+    event(s, 'level');
     s.xpNeeded = Math.round(s.xpNeeded * 1.24 + 4);
   }
   for (const item of collectLoot(s.loot, s.x, s.z)) receiveItem(s, item);
@@ -669,7 +574,7 @@ export function tick(s: GameState, dt: number, input: InputState = {}) {
     for (const item of collectLoot(s.loot, s.x, s.z, Infinity)) receiveItem(s, item);
     s.phase = 'won';
     event(s, 'end');
-  } else if (s.pendingLevels > 0) levelUp(s);
+  }
 }
 
 function receiveItem(s: GameState, item: InventoryItem) {

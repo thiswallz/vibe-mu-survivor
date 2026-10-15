@@ -12,3 +12,5 @@ dist
 
 **/dist/
 *.tsbuildinfo
+
+data/

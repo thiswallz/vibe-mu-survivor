@@ -168,3 +168,20 @@ test('inventory armor icons use the native Player texture fallback and preserve 
     }
   }
 });
+
+test('native accessories and wearable pets ship complete geometry and resolved textures', () => {
+  const catalog = JSON.parse(fs.readFileSync(path.join(ui, 'assets/accessory-catalog.json')));
+  assert.equal(catalog.sourceClient, 'Nexus MU Online');
+  for (const entry of Object.values(catalog.items)) {
+    const model = JSON.parse(
+      fs.readFileSync(path.join(ui, 'assets/models', entry.model + '.json')),
+    );
+    assert.ok(model.parts.length);
+    for (const part of model.parts) {
+      assert.ok(part.positions.length > 0);
+      assert.ok(part.positions.every(Number.isFinite));
+      assert.ok(part.texture, entry.model + ' texture must resolve');
+      assert.ok(fs.existsSync(path.join(ui, part.texture)), part.texture);
+    }
+  }
+});

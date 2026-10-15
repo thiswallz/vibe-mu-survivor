@@ -23,6 +23,10 @@
     "./stage": {
       "types": "./dist/stage.d.ts",
       "default": "./dist/stage.js"
+    },
+    "./vault": {
+      "types": "./dist/vault.d.ts",
+      "default": "./dist/vault.js"
     }
   },
   "dependencies": {

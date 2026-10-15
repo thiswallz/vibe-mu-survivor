@@ -7,7 +7,7 @@ import struct, json, math, io, shutil, subprocess, tempfile, os
 import numpy as np
 from PIL import Image
 ROOT=Path(__file__).resolve().parents[1]
-SOURCE=ROOT.parent/'Mu Eternals S20 1-2'/'Data'
+SOURCE=Path(os.environ.get('MU_ASSET_SOURCE', str(ROOT.parent/'Nexus MU Online'/'Data')))
 OUT=ROOT/'apps'/'ui'/'public'/'assets'
 manifest={}
 class Reader:
@@ -85,7 +85,7 @@ def texture(folder,name):
   im.save(dest)
  return 'assets/textures/'+dest.name
 
-def convert(key,paths,animate=False,playerRig=None):
+def convert(key,paths,animate=False,playerRig=None,animationSamples=4):
  parts=[];bounds=[]; clips={}; matsForClips=[]
  if playerRig:
   rig,rigActions=playerRig
@@ -105,7 +105,7 @@ def convert(key,paths,animate=False,playerRig=None):
   # Walk is action 2 for classic monsters. Export four sampled poses.
   action=min(2,len(actions)-1); frames=matsForClips
   if playerRig:mat=matsForClips[0]
-  if animate and action>=0:frames=[matrices(bones,action,int(i*actions[action]/4)) for i in range(4)]
+  if animate and action>=0:frames=[matrices(bones,action,int(i*actions[action]/animationSamples)) for i in range(animationSamples)]
   for vv,uv,tri,tex in meshes:
    if playerRig and tex.lower().startswith('hide'):continue
    if key.startswith('loot-') and tex.lower().startswith(('hide','skin','level')):continue
@@ -121,7 +121,7 @@ def convert(key,paths,animate=False,playerRig=None):
      positions.extend(transform(vv[vi[k]],mat));uvs.extend([uv[ui[k]][0],1-uv[ui[k]][1]])
      for idx,m in enumerate(frames):morph[idx].extend(transform(vv[vi[k]],m))
    if positions:
-    part={'positions':positions,'uvs':uvs,'texture':texture(path.parent,resolved) or texture(SOURCE/'Player',resolved),'sourceTexture':tex,'resolvedTexture':resolved,'sourceModel':str(path.relative_to(SOURCE)),'slot':{'Helm':'helm','Armor':'armor','Pant':'pants','t_Pant':'pants','Glove':'gloves','Boot':'boots'}.get(next((prefix for prefix in ['t_Pant','Helm','Armor','Pant','Glove','Boot'] if path.stem.startswith(prefix)),''))}
+    part={'positions':positions,'uvs':uvs,'texture':texture(path.parent,resolved) or texture(SOURCE/'Player',resolved) or texture(SOURCE/'Item',resolved),'sourceTexture':tex,'resolvedTexture':resolved,'sourceModel':str(path.relative_to(SOURCE)),'slot':{'Helm':'helm','Armor':'armor','Pant':'pants','t_Pant':'pants','Glove':'gloves','Boot':'boots'}.get(next((prefix for prefix in ['t_Pant','Helm','Armor','Pant','Glove','Boot'] if path.stem.startswith(prefix)),''))}
     if playerRig:part['upperBody']=sum(v[0]>=17 for v in vv)>len(vv)/2
     if morph:part['frames']=morph
     parts.append(part);bounds.extend(np.array(positions).reshape(-1,3).tolist())
@@ -130,10 +130,10 @@ def convert(key,paths,animate=False,playerRig=None):
  if clips:
   result['clips']=clips;result['sockets']={}
   axis=np.array([[1,0,0],[0,0,1],[0,-1,0]])
-  for label,node in [('right',33),('left',42)]:
+  for label,node in [('right',33),('left',42),('torso',18)]:
    result['sockets'][label]=[]
    for mats in matsForClips:
-    m=mats[node];out=np.eye(4);out[:3,:3]=axis@m[:3,:3]@axis.T;out[:3,3]=axis@m[:3,3]/100
+    m=mats[node];out=np.eye(4);rotation=m[:3,:3]@(matsForClips[0][node][:3,:3].T if label=='torso' else np.eye(3));out[:3,:3]=axis@rotation@axis.T;out[:3,3]=axis@m[:3,3]/100
     result['sockets'][label].append([round(float(v),6) for v in out.T.flatten()])
  dest=OUT/'models'/f'{key}.json';dest.write_text(json.dumps(result,separators=(',',':')))
  manifest[key]={'source':[str(p.relative_to(SOURCE)) for p in paths],'file':'assets/models/'+dest.name,'triangles':sum(len(p['positions'])//9 for p in parts),'height':float(maximum[1]-minimum[1])}

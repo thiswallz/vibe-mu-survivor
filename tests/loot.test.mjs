@@ -9,22 +9,24 @@ import {
 } from '../packages/game/dist/loot.js';
 import { readInventory, bankRun } from '../packages/game/dist/inventory.js';
 import { createRun, spawnEnemy, tick } from '../packages/game/dist/index.js';
-test('stage loot is capped at five, includes Kundun boxes, and requires proximity', () => {
+test('stage loot is capped, includes accessories and a Guardian box, and requires proximity', () => {
   const state = createLootState();
+  const run = createRun('knight', () => 0);
   let uid = 1;
-  for (const kills of [12, 35, 75, 130]) dropLoot(state, { x: 4, z: 0 }, kills, () => uid++);
-  dropLoot(state, { x: 4, z: 0, elite: true }, 131, () => uid++);
-  for (let i = 0; i < 10; i++)
-    assert.equal(
-      dropLoot(state, { x: 0, z: 0, elite: true }, 1000, () => uid++),
-      null,
-    );
+  for (let i = 0; i < 11; i++) assert.ok(dropLoot(state, { x: 4, z: 0 }, 1000, () => uid++, run));
+  assert.ok(state.drops.some((item) => item.id === 'ring-ice'));
+  assert.ok(dropLoot(state, { x: 4, z: 0, elite: true }, 1001, () => uid++, run));
+  assert.equal(
+    dropLoot(state, { x: 4, z: 0, elite: true }, 1002, () => uid++, run),
+    null,
+  );
   assert.equal(state.drops.length, LOOT_LIMIT);
-  assert.equal(state.drops.filter((d) => d.id === 'kundun-box').length, 2);
+  assert.equal(state.drops.at(-1).id, 'kundun-box');
   assert.equal(collectLoot(state, 0, 0).length, 0);
-  assert.equal(collectLoot(state, 4, 0).length, 5);
+  assert.equal(collectLoot(state, 4, 0).length, LOOT_LIMIT);
   assert.equal(state.drops.length, 0);
 });
+
 test('inventory persists across runs, merges quantities and banks a run only once', () => {
   const data = new Map(),
     storage = { getItem: (k) => data.get(k), setItem: (k, v) => data.set(k, v) };

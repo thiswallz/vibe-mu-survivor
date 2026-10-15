@@ -1,0 +1,169 @@
+#account-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  overflow: auto;
+  background:
+    radial-gradient(ellipse at top, #26352de8, #080e12fa 80%),
+    url('/assets/textures/lorencia-terrain.jpg');
+  padding: 5vh max(24px, calc((100vw - 740px) / 2));
+  color: #e8d7b5;
+}
+#account-gate[hidden] {
+  display: none;
+}
+#account-gate h1 {
+  font:
+    clamp(32px, 5vw, 60px) Georgia,
+    serif;
+  margin: 20px 0;
+}
+#account-gate form {
+  display: grid;
+  gap: 16px;
+  margin: 24px 0;
+}
+#account-gate label,
+.map-choice label {
+  display: grid;
+  gap: 8px;
+}
+#account-gate input,
+select {
+  background: #101b20;
+  color: #f4e5c6;
+  border: 1px solid #89734a;
+  border-radius: 3px;
+  padding: 12px;
+  font: inherit;
+}
+#roster {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+  margin: 24px 0;
+}
+#account-gate .secondary {
+  padding: 14px;
+}
+.map-choice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 16px;
+  margin-top: 15px;
+}
+#save-status {
+  color: #ffb987;
+}
+/* Character screens share the live Three.js scene behind a readable side panel. */
+#account-gate.character-screen {
+  left: auto;
+  width: min(440px, 44vw);
+  padding: 7vh 32px 32px;
+  background: linear-gradient(90deg, #0b141ae8, #0b141afa);
+  border-left: 1px solid #806c424d;
+}
+#account-gate.character-screen h1 {
+  font-size: 40px;
+}
+.class-options {
+  display: grid;
+  gap: 8px;
+}
+#account-gate [aria-pressed='true'] {
+  border-color: #e2bf7d;
+  background: #5c482d;
+  color: #fff1cd;
+}
+#account-gate .primary,
+#account-gate.character-screen > .secondary {
+  width: 100%;
+  margin-bottom: 10px;
+}
+#class-description {
+  min-height: 50px;
+  line-height: 1.6;
+}
+.choosing-character #menu,
+.choosing-character #header,
+.choosing-character #character-button {
+  visibility: hidden;
+}
+#menu input,
+#menu select {
+  pointer-events: auto;
+}
+@media (max-width: 700px) {
+  #account-gate.character-screen {
+    top: 46%;
+    width: 100%;
+    padding: 20px;
+    border-left: 0;
+  }
+  #account-gate.character-screen h1 {
+    font-size: 28px;
+    margin: 8px 0;
+  }
+  #account-gate.character-screen form {
+    margin: 12px 0;
+    gap: 8px;
+  }
+  .class-options {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  #account-gate .class-options .secondary {
+    padding: 10px 3px;
+  }
+  #class-description {
+    min-height: 0;
+    font-size: 12px;
+  }
+}
+#stage-name {
+  font:
+    normal clamp(24px, 3vw, 34px)/1.2 Georgia,
+    serif;
+}
+#stage-status {
+  font-size: 12px;
+  color: #c9d4bd;
+  min-height: 18px;
+  margin: 12px 0;
+}
+.map-choice select:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+#account-gate[aria-busy='true'] {
+  cursor: wait;
+}
+#account-gate[aria-busy='true'] button {
+  opacity: 0.65;
+}
+/* Destination controls stay readable over snow and brighter native terrain. */
+.stage {
+  width: 280px;
+  padding: 20px;
+  background: #09151bd9;
+  border: 1px solid #c8b07744;
+  border-radius: 3px;
+}
+.stage p {
+  color: #c3c9c2;
+}
+.selection {
+  padding: 16px 20px;
+  background: #09151bd6;
+  border: 1px solid #c8b07733;
+  border-radius: 3px;
+}
+@media (max-width: 800px) {
+  .selection {
+    padding: 12px;
+  }
+  .stage {
+    padding: 12px;
+    width: 230px;
+  }
+}

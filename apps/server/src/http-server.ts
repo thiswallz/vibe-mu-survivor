@@ -1,3 +1,4 @@
+import { accountService } from './accounts.js';
 import type { HealthResponse, DemoResponse } from '@mu-survivor/models';
 import http from 'node:http';
 import https from 'node:https';
@@ -49,17 +50,20 @@ interface ServerOptions {
   serveUI?: boolean;
   upstream?: URL;
   uiRoot?: string;
+  databasePath?: string;
 }
 export function createServer({
   production = false,
   serveUI = true,
   upstream,
   uiRoot,
+  databasePath = process.env.DATABASE_PATH || path.join(app, 'data/mu-survivor.sqlite'),
 }: ServerOptions = {}) {
   const root = uiRoot || path.join(app, 'apps/ui/dist');
   if (serveUI && !fs.existsSync(path.join(root, 'index.html')))
     throw new Error('UI build missing. Run npm start or npm run build first.');
-  return http.createServer((req, res) => {
+  const accounts = upstream ? undefined : accountService(databasePath);
+  const server = http.createServer((req, res) => {
     let requested, url;
     try {
       url = new URL(req.url || '/', 'http://localhost');
@@ -69,7 +73,18 @@ export function createServer({
       res.writeHead(400).end();
       return;
     }
-    if (req.method !== 'GET' && req.method !== 'HEAD') {
+    if (
+      accounts &&
+      /^\/api\/(register|login|logout|account|characters|vault)(\/|$)/.test(requested)
+    ) {
+      void accounts.handle(req, res, url);
+      return;
+    }
+    if (
+      !(upstream && requested.startsWith('/api/')) &&
+      req.method !== 'GET' &&
+      req.method !== 'HEAD'
+    ) {
       res.writeHead(405, { Allow: 'GET, HEAD' }).end();
       return;
     }
@@ -96,10 +111,10 @@ export function createServer({
       target.search = url.search;
       const proxy = (target.protocol === 'https:' ? https : http).request(
         target,
-        { method: req.method, headers: { accept: req.headers.accept || 'application/json' } },
+        { method: req.method, headers: { ...req.headers, host: upstream.host } },
         (response) => {
           const headers: http.OutgoingHttpHeaders = { 'Cache-Control': 'no-store' };
-          for (const key of ['content-type', 'content-length'])
+          for (const key of ['content-type', 'content-length', 'set-cookie'])
             if (response.headers[key]) headers[key] = response.headers[key];
           res.writeHead(response.statusCode || 502, headers);
           response.on('error', () => res.destroy());
@@ -112,7 +127,7 @@ export function createServer({
         else res.destroy();
       });
       res.on('close', () => proxy.destroy());
-      proxy.end();
+      req.pipe(proxy);
       return;
     }
     if (requested === '/api/health') {
@@ -126,7 +141,7 @@ export function createServer({
         characters: 3,
         enemyTypes: 5,
         skillsPerCharacter: 2,
-        accounts: false,
+        accounts: true,
       });
       return;
     }
@@ -188,4 +203,6 @@ export function createServer({
       stream.pipe(res);
     });
   });
+  server.on('close', () => accounts?.close());
+  return server;
 }

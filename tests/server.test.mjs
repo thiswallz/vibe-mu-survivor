@@ -7,6 +7,7 @@ import { createServer, configuration } from '../apps/server/dist/http-server.js'
 async function listen(t, options) {
   const server = createServer({
     uiRoot: path.resolve(path.dirname(fileURLToPath(import.meta.url)), 'fixtures/ui'),
+    databasePath: ':memory:',
     ...options,
   });
   server.listen(0, '::');

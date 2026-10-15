@@ -1,0 +1,16 @@
+{
+  "sourceClient": "Nexus MU Online",
+  "terrainSources": {
+    "noria": [
+      "World4/TileGrass01.OZJ",
+      "World4/TileGround01.OZJ",
+      "World4/TileRock01.OZJ"
+    ],
+    "devias": [
+      "World3/TileGrass01.OZJ",
+      "World3/TileGround01.OZJ",
+      "World3/TileRock01.OZJ"
+    ]
+  },
+  "layout": "Original small survivor arenas inspired by MU. Native encrypted map placements are not imported."
+}
